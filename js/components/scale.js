@@ -1,0 +1,36 @@
+const { el, list } = require('redom')
+
+const Era = require('./era')
+
+const className = '.scale'
+const style = {
+  height: '700px',
+  display: 'grid',
+  gridGap: '10px',
+  gridAutoFlow: 'row',
+  justifyItems: 'center',
+  alignContent: 'center'
+}
+
+module.exports = class Scale {
+  constructor () {
+    this.el = el(className,
+      {style}
+    )
+    this.list = list(this.el, Era)
+  }
+  update (data) {
+    if (data.isWinner) {
+      // TODO: winner and current player
+      this.el.style.backgroundColor = 'green'
+      this.el.style.border = '5px solid green'
+    } else if (data.currentPlayer) {
+      this.el.style.backgroundColor = 'red'
+      this.el.style.border = '5px solid red'
+    } else {
+      this.el.style.backgroundColor = 'gray'
+      this.el.style.border = '5px solid gray'
+    }
+    this.list.update(data.eras)
+  }
+}
