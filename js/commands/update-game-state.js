@@ -27,8 +27,8 @@ function playersReducer (activePlayers) {
   })
 }
 
-function currentPlayerReducer (players, currentPlayerUrl) {
-  return players.map(p => p.url).indexOf(currentPlayerUrl)
+function currentPlayerReducer (players, playerUrl) {
+  return players.map(p => p.url).indexOf(playerUrl)
 }
 
 function winnersReducer (players) {
