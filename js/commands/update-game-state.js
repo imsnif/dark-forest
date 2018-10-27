@@ -41,49 +41,67 @@ function winnersReducer (players) {
   }, [])
 }
 
-async function updateGameState (selfArchive, store, set) {
-  await selfArchive.writeFile('/timestamp', JSON.stringify(Date.now()))
+async function getPeerArchives () {
   const peers = await experimental.datPeers.list()
-  const peerArchives = await Promise.all(
+  return Promise.all(
     peers.filter(p => p.sessionData).map(p => DatArchive.load(p.sessionData))
   )
-  const allArchives = peerArchives.concat(selfArchive)
-  const activePlayers = (await Promise.all(allArchives.map(
-    async archive => {
-      try {
-        const [stateFile, timestamp] = await Promise.all([
-          archive.readFile('/state.json'),
-          archive.readFile('/timestamp')
-        ])
-        // this number is arbitrary
-        if ((Number(timestamp) + 1500) < Date.now()) {
+}
+
+async function extractStateFromArchives (archives) {
+  const allStates = await Promise.all(
+    archives.map(
+      async archive => {
+        try {
+          const [state, timestamp] = await Promise.all([
+            archive.readFile('/state.json'),
+            archive.readFile('/timestamp')
+          ])
+          const url = archive.url
+          return {
+            state: JSON.parse(state),
+            timestamp,
+            url
+          }
+        } catch (e) {
           return false
         }
-        const state = JSON.parse(stateFile)
-        // TODO:
-        // 1. make sure state is array of 12 numbers
-        // 2. make sure does not have card more than once
-        // 3. make sure does not have wonder without supporting tech
-        return {
-          state,
-          url: archive.url
-        }
-      } catch (e) {
-        return false
       }
-    }
-  ))).filter(Boolean)
+    )
+  )
+  const readableStates = allStates.filter(Boolean)
+  return readableStates
+}
+
+function findActivePlayers (playerStates) {
+  return playerStates.filter(({timestamp}) => {
+    // this number is arbitrary
+    return ((Number(timestamp) + 1500) > Date.now())
+  })
+}
+
+function calculateGameState (activePlayers, playerUrl) {
   const players = playersReducer(activePlayers)
-  const currentPlayerIndex = currentPlayerReducer(activePlayers, selfArchive.url)
+  const currentPlayerIndex = currentPlayerReducer(activePlayers, playerUrl)
   const winners = winnersReducer(players)
-  const currentPlayerState = players[currentPlayerIndex]
-  set('players', players)
-  set('currentPlayerIndex', currentPlayerIndex)
-  set('winners', winners)
+  return { players, currentPlayerIndex, winners }
+}
+
+async function updateGameState (selfArchive, store, setUiState) {
+  await selfArchive.writeFile('/timestamp', JSON.stringify(Date.now()))
+  const peerArchives = await getPeerArchives()
+  const allArchives = peerArchives.concat(selfArchive)
+  const playerStates = await extractStateFromArchives(allArchives)
+  const activePlayers = findActivePlayers(playerStates)
+  const gameState = calculateGameState(activePlayers, selfArchive.url)
+  const currentPlayerState = gameState.players[gameState.currentPlayerIndex]
+  setUiState('players', gameState.players)
+  setUiState('currentPlayerIndex', gameState.currentPlayerIndex)
+  setUiState('winners', gameState.winners)
   await selfArchive.writeFile(
     '/state.json', JSON.stringify(currentPlayerState)
   )
-  setTimeout(() => updateGameState(selfArchive, store, set), 500)
+  setTimeout(() => updateGameState(selfArchive, store, setUiState), 500)
 }
 
 module.exports = { updateGameState }
