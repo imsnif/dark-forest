@@ -24,18 +24,22 @@ const style = {
 const oneToTwelve = Array(12)
   .fill(1).map((one, index) => index + 1)
 
+const initialState = oneToTwelve.map(
+  actionIndex => ({actionIndex, disabled: false})
+)
+
 module.exports = class Inventory {
   constructor () {
     this.el = el(className,
       {style}
     )
     this.list = list(this.el, Action)
-    this.list.update(oneToTwelve.map(eraIndex => ({eraIndex, disabled: false})))
+    this.list.update(initialState)
   }
   update (data) {
-    this.list.update(oneToTwelve.map(i => ({
-      eraIndex: i,
-      disabled: data.indexOf(i) > -1
+    this.list.update(oneToTwelve.map(actionIndex => ({
+      actionIndex,
+      disabled: data.indexOf(actionIndex) > -1
     })))
   }
 }

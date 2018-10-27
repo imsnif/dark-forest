@@ -67,9 +67,7 @@ module.exports = class Era {
     })
   }
   update (data, index, items, context) {
-    const eraData = flatList[data.eraIndex]
-    const { playerId } = data
-    this.scaleId = playerId
+    const eraData = flatList[data.actionIndex]
     this.eraLocation = index
     this.currentPlayer = data.currentPlayer
     const {type, era, text} = eraData

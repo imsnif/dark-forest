@@ -25,6 +25,6 @@ module.exports = class App {
   }
   update (data) {
     this.universe.update(data)
-    this.inventory.update(data.players[data.myIndex])
+    this.inventory.update(data.players[data.currentPlayerIndex])
   }
 }

@@ -24,22 +24,18 @@ module.exports = class Universe {
     this.list = list(this.el, Scale)
   }
   update (data) {
-    const players = data.players || this.players
-    if (!players) return
-    this.list.update(Object.keys(data.players).filter(p => p && data.players[p]).sort().map(playerId => {
-      const currentPlayer = Number(data.myIndex) === Number(playerId)
+    const { players } = data
+    this.list.update(players.map((playerState, playerIndex) => {
+      const currentPlayer = Number(data.currentPlayerIndex) === Number(playerIndex)
       return {
-        eras: Object.keys(data.players[playerId]).map(eraIndex => ({
-          eraIndex: data.players[playerId][eraIndex],
-          playerId,
+        eras: playerState.map(actionIndex => ({
+          actionIndex,
+          playerIndex,
           currentPlayer
         })),
         currentPlayer,
-        isWinner: data.winners
-          ? data.winners.includes(Number(playerId))
-          : false
+        isWinner: data.winners.includes(Number(playerIndex))
       }
     }))
-    this.players = players
   }
 }

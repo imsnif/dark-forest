@@ -51,7 +51,7 @@ module.exports = class Action {
       onclick: () => {
         if (!this.disabled) {
           dispatch(this, 'action', {
-            eraIndex: this.eraIndex
+            actionIndex: this.actionIndex
           })
         }
       },
@@ -59,10 +59,10 @@ module.exports = class Action {
     })
   }
   update (data, index, items, context) {
-    const { eraIndex, disabled } = data
-    const eraData = flatList[eraIndex]
+    const { actionIndex, disabled } = data
+    const eraData = flatList[actionIndex]
     const { type, era, text } = eraData
-    this.eraIndex = eraIndex
+    this.actionIndex = actionIndex
     this.disabled = disabled
     this.el.style.backgroundColor = typeColors[type]
     this.el.style.borderColor = eraColors[era]
