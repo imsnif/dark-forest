@@ -76,7 +76,7 @@ test(
       )
       t.ok(
         selfArchive.writeFile.calledWith('/timestamp', JSON.stringify(now)),
-        'state written to self archive'
+        'timestamp written to self archive'
       )
       cleanup(clock)
     } catch (e) {
