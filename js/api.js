@@ -48,5 +48,6 @@ module.exports = async (app, selfArchive) => {
   await experimental.datPeers.setSessionData(selfArchive.url)
 
   await selfArchive.writeFile('/state.json', JSON.stringify(initialState))
+  await selfArchive.writeFile('/timestamp', JSON.stringify(Date.now()))
   updateGameState(selfArchive, store, set) // TODO: promise, error, etc.
 }
