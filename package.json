@@ -5,7 +5,8 @@
   "scripts": {
     "build": "browserify js/index.js -o dist/main.js",
     "watch": "watchify --debug js/index.js -o dist/main.js",
-    "commitmsg": "commitlint -E GIT_PARAMS"
+    "commitmsg": "commitlint -E GIT_PARAMS",
+    "test": "tape test/**/*.spec.js | tap-spec"
   },
   "author": "Aram Drevekenin <grimsniffer@gmail.com>",
   "license": "MIT",
@@ -24,11 +25,13 @@
     "eslint-plugin-promise": "^3.8.0",
     "eslint-plugin-standard": "^3.1.0",
     "husky": "^0.14.3",
+    "lolex": "^3.0.0",
     "looks-same": "^3.3.0",
     "nyc": "^13.0.1",
     "proxyquire": "^2.0.1",
     "puppeteer": "^1.5.0",
-    "sinon": "^6.1.4",
+    "riteway": "^3.0.1",
+    "sinon": "^6.3.5",
     "tap-spec": "^5.0.0",
     "tape": "^4.9.1",
     "watchify": "^3.11.0"

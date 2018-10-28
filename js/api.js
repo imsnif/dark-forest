@@ -49,5 +49,5 @@ module.exports = async (app, selfArchive) => {
 
   await selfArchive.writeFile('/state.json', JSON.stringify(initialState))
   await selfArchive.writeFile('/timestamp', JSON.stringify(Date.now()))
-  updateGameState(selfArchive, store, set) // TODO: promise, error, etc.
+  updateGameState(selfArchive, set) // TODO: promise, error, etc.
 }

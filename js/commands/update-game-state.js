@@ -87,7 +87,7 @@ function calculateGameState (activePlayers, playerUrl) {
   return { players, currentPlayerIndex, winners }
 }
 
-async function updateGameState (selfArchive, store, setUiState) {
+async function updateGameState (selfArchive, setUiState) {
   const peerArchives = await getPeerArchives()
   const allArchives = peerArchives.concat(selfArchive)
   const playerStates = await extractStateFromArchives(allArchives)
@@ -101,7 +101,7 @@ async function updateGameState (selfArchive, store, setUiState) {
     '/state.json', JSON.stringify(currentPlayerState)
   )
   await selfArchive.writeFile('/timestamp', JSON.stringify(Date.now()))
-  setTimeout(() => updateGameState(selfArchive, store, setUiState), 500)
+  setTimeout(() => updateGameState(selfArchive, setUiState), 500)
 }
 
 module.exports = { updateGameState }
