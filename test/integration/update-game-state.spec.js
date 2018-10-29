@@ -28,6 +28,23 @@ function mockDatApi (peerState, selfState, now) {
   })
 }
 
+function mockDatApiWithInactivePeers (peerState, selfState, now) {
+  global.experimental = {}
+  global.experimental.datPeers = {
+    list: () => Object.keys(peerState).map(id => ({sessionData: id}))
+  }
+  global.DatArchive = {}
+  global.DatArchive.load = (id) => ({
+    url: id,
+    readFile: mockReadFile(
+      id === 'id2'
+        ? now - 2000
+        : now,
+      peerState[id] || selfState[id]
+    )
+  })
+}
+
 function cleanup (clock) {
   clock.uninstall()
   delete global.experimental
@@ -52,7 +69,9 @@ test(
       const selfArchive = mockSelfArchive(selfState, now)
       const setUiState = sinon.spy()
       mockDatApi(peerState, selfState, now)
+
       await updateGameState(selfArchive, setUiState)
+
       t.ok(setUiState.calledWith('players', [
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -66,6 +85,164 @@ test(
       )
       t.ok(
         setUiState.calledWith('winners', []),
+        'winners set properly in ui state'
+      )
+      t.ok(
+        selfArchive.writeFile.calledWith(
+          '/state.json', JSON.stringify(selfState.id3)
+        ),
+        'state written to self archive'
+      )
+      t.ok(
+        selfArchive.writeFile.calledWith('/timestamp', JSON.stringify(now)),
+        'timestamp written to self archive'
+      )
+      cleanup(clock)
+    } catch (e) {
+      t.fail(e.message)
+      cleanup(clock)
+      t.end()
+    }
+  }
+)
+
+test(
+  'updateGameState() - game state with five players with winners', async t => {
+    t.plan(5)
+    const now = 1000
+    const clock = lolex.install({now})
+    try {
+      const peerState = {
+        id1: [4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        id2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        id4: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        id5: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      }
+      const selfState = { id3: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+      const selfArchive = mockSelfArchive(selfState, now)
+      const setUiState = sinon.spy()
+      mockDatApi(peerState, selfState, now)
+
+      await updateGameState(selfArchive, setUiState)
+
+      t.ok(setUiState.calledWith('players', [
+        [4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      ]), 'players scales set properly in ui state')
+      t.ok(
+        setUiState.calledWith('currentPlayerIndex', 2),
+        'currentPlayerIndex set properly in ui state'
+      )
+      t.ok(
+        setUiState.calledWith('winners', [0]),
+        'winners set properly in ui state'
+      )
+      t.ok(
+        selfArchive.writeFile.calledWith(
+          '/state.json', JSON.stringify(selfState.id3)
+        ),
+        'state written to self archive'
+      )
+      t.ok(
+        selfArchive.writeFile.calledWith('/timestamp', JSON.stringify(now)),
+        'timestamp written to self archive'
+      )
+      cleanup(clock)
+    } catch (e) {
+      t.fail(e.message)
+      cleanup(clock)
+      t.end()
+    }
+  }
+)
+
+test(
+  'updateGameState() - game state with five players affecting eachother', async t => {
+    t.plan(5)
+    const now = 1000
+    const clock = lolex.install({now})
+    try {
+      const peerState = {
+        id1: [4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        id2: [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        id4: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        id5: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      }
+      const selfState = { id3: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+      const selfArchive = mockSelfArchive(selfState, now)
+      const setUiState = sinon.spy()
+      mockDatApi(peerState, selfState, now)
+
+      await updateGameState(selfArchive, setUiState)
+
+      t.ok(setUiState.calledWith('players', [
+        [0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      ]), 'players scales set properly in ui state')
+      t.ok(
+        setUiState.calledWith('currentPlayerIndex', 2),
+        'currentPlayerIndex set properly in ui state'
+      )
+      t.ok(
+        setUiState.calledWith('winners', []),
+        'winners set properly in ui state'
+      )
+      t.ok(
+        selfArchive.writeFile.calledWith(
+          '/state.json', JSON.stringify(selfState.id3)
+        ),
+        'state written to self archive'
+      )
+      t.ok(
+        selfArchive.writeFile.calledWith('/timestamp', JSON.stringify(now)),
+        'timestamp written to self archive'
+      )
+      cleanup(clock)
+    } catch (e) {
+      t.fail(e.message)
+      cleanup(clock)
+      t.end()
+    }
+  }
+)
+
+test(
+  'updateGameState() - game state with inactive players', async t => {
+    t.plan(5)
+    const now = 1000
+    const clock = lolex.install({now})
+    try {
+      const peerState = {
+        id1: [4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        id2: [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        id4: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        id5: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      }
+      const selfState = { id3: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+      const selfArchive = mockSelfArchive(selfState, now)
+      const setUiState = sinon.spy()
+      mockDatApiWithInactivePeers(peerState, selfState, now)
+
+      await updateGameState(selfArchive, setUiState)
+
+      t.ok(setUiState.calledWith('players', [
+        [4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      ]), 'players scales set properly in ui state')
+      t.ok(
+        setUiState.calledWith('currentPlayerIndex', 1),
+        'currentPlayerIndex set properly in ui state'
+      )
+      t.ok(
+        setUiState.calledWith('winners', [0]),
         'winners set properly in ui state'
       )
       t.ok(
