@@ -1,73 +1,91 @@
 const statics = {
   weapons: {
-    zero: {
-      era: 'zero',
-      type: 'weapon',
-      text: 'weapon'
-    },
     one: {
       era: 'one',
       type: 'weapon',
-      text: 'weapon'
+      text: 'weapon',
+      url: '/images/pirate.png'
     },
     two: {
       era: 'two',
       type: 'weapon',
-      text: 'weapon'
+      text: 'weapon',
+      url: '/images/pirate.png'
+    },
+    three: {
+      era: 'three',
+      type: 'weapon',
+      text: 'weapon',
+      url: '/images/pirate.png'
     }
   },
   wonders: {
-    zero: {
-      era: 'zero',
-      type: 'wonder',
-      text: 'wonder'
-    },
     one: {
       era: 'one',
       type: 'wonder',
-      text: 'wonder'
+      text: 'wonder',
+      url: '/images/wonder1.png'
     },
     two: {
       era: 'two',
       type: 'wonder',
-      text: 'wonder'
+      text: 'wonder',
+      url: '/images/wonder2.png'
+    },
+    three: {
+      era: 'three',
+      type: 'wonder',
+      text: 'wonder',
+      url: '/images/wonder3.png'
     }
   },
   tech: {
-    zero: {
-      one: {
-        era: 'zero',
-        type: 'tech',
-        text: 'one'
-      },
-      two: {
-        era: 'zero',
-        type: 'tech',
-        text: 'two'
-      }
-    },
     one: {
-      one: {
-        era: 'one',
-        type: 'tech',
-        text: 'one'
-      },
       two: {
         era: 'one',
         type: 'tech',
-        text: 'two'
+        text: 'two',
+        url: '/images/discovery1-1.png',
+        index: 1
+      },
+      three: {
+        era: 'one',
+        type: 'tech',
+        text: 'three',
+        url: '/images/discovery1-2.png',
+        index: 2
       }
     },
     two: {
-      one: {
-        era: 'two',
-        type: 'tech',
-        text: 'one'
-      },
       two: {
         era: 'two',
         type: 'tech',
-        text: 'two'
+        text: 'two',
+        url: '/images/discovery2-1.png',
+        index: 1
+      },
+      three: {
+        era: 'two',
+        type: 'tech',
+        text: 'three',
+        url: '/images/discovery2-2.png',
+        index: 2
+      }
+    },
+    three: {
+      two: {
+        era: 'three',
+        type: 'tech',
+        text: 'two',
+        url: '/images/discovery3-1.png',
+        index: 1
+      },
+      three: {
+        era: 'three',
+        type: 'tech',
+        text: 'three',
+        url: '/images/discovery3-2.png',
+        index: 2
       }
     }
   }
@@ -89,8 +107,8 @@ const flatList = [ // TODO: just write flat list
     return list.concat(wonderList)
   } else if (type === 'tech') {
     const techList = Object.keys(statics[type]).reduce((tList, era) => {
-      tList.push(statics[type][era].one)
       tList.push(statics[type][era].two)
+      tList.push(statics[type][era].three)
       return tList
     }, [])
     return list.concat(techList)

@@ -6,14 +6,13 @@ const className = '.universe'
 const style = {
   alignSelf: 'center',
   justifySelf: 'center',
-  backgroundColor: '#212121',
   display: 'grid',
   gridGap: '100px',
   alignItems: 'center',
   justifyContent: 'center',
   gridAutoFlow: 'column',
-  height: '80%',
-  width: '80%'
+  height: '100%',
+  width: '100%'
 }
 
 module.exports = class Universe {

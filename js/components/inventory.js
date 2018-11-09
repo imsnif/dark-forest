@@ -1,5 +1,6 @@
 const { el, list } = require('redom')
 
+const { flatList } = require('./statics')
 const Action = require('./action')
 
 const className = '.inventory'
@@ -8,25 +9,23 @@ const style = {
   justifySelf: 'center',
   alignContent: 'center',
   justifyContent: 'center',
-  backgroundColor: '#212121',
-  // backgroundColor: 'purple',
   display: 'grid',
-  //  gridGap: '100px',
-  //  alignItems: 'center',
-  //  justifyContent: 'center',
-  gridTemplateColumns: 'repeat(6, 1fr)',
+  gridTemplateColumns: 'repeat(4, 180px)',
   gridGap: '20px',
   gridAutoRows: '80px',
-  height: '100%',
+  height: '200px',
   width: '80%'
 }
 
-const oneToTwelve = Array(12)
-  .fill(1).map((one, index) => index + 1)
-
-const initialState = oneToTwelve.map(
-  actionIndex => ({actionIndex, disabled: false})
-)
+const getNextItem = (era, currentPlayerUsedItems) => {
+  return currentPlayerUsedItems.reduce((nextItemIndex, usedItem) => {
+    if (usedItem.era === era && usedItem.type !== 'weapon') {
+      return nextItemIndex + 1
+    } else {
+      return nextItemIndex
+    }
+  }, 1)
+}
 
 module.exports = class Inventory {
   constructor () {
@@ -34,12 +33,21 @@ module.exports = class Inventory {
       {style}
     )
     this.list = list(this.el, Action)
-    this.list.update(initialState)
+    this.list.update([])
   }
   update (data) {
-    this.list.update(oneToTwelve.map(actionIndex => ({
-      actionIndex,
-      disabled: data.indexOf(actionIndex) > -1
-    })))
+    const currentPlayerUsedItems = data.map(i => flatList[i])
+    const nextFirstEraIndex = getNextItem('one', currentPlayerUsedItems)
+    const nextSecondEraIndex = getNextItem('two', currentPlayerUsedItems)
+    const nextThirdEraIndex = getNextItem('three', currentPlayerUsedItems)
+    const nextWeaponIndex = currentPlayerUsedItems
+      .filter(i => i.type === 'weapon')
+      .length + 1
+    this.list.update([
+      {type: 'build', era: 'one', nextIndex: nextFirstEraIndex},
+      {type: 'build', era: 'two', nextIndex: nextSecondEraIndex},
+      {type: 'build', era: 'three', nextIndex: nextThirdEraIndex},
+      {type: 'weapon', nextIndex: nextWeaponIndex}
+    ])
   }
 }

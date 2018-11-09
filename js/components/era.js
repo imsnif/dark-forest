@@ -4,14 +4,13 @@ const { flatList } = require('./statics')
 
 const className = '.era'
 const style = {
-  backgroundColor: 'red',
-  height: '30px',
+  margin: 0,
+  padding: 0,
+  height: '45px',
   width: '80px',
-  borderStyle: 'solid',
-  borderWidth: '5px',
   textAlign: 'center',
   cursor: 'pointer',
-  userSelect: 'none'
+  userSelect: 'none',
 }
 
 const colors = {
@@ -70,9 +69,10 @@ module.exports = class Era {
     const eraData = flatList[data.actionIndex]
     this.eraLocation = index
     this.currentPlayer = data.currentPlayer
-    const {type, era, text} = eraData
-    this.el.style.backgroundColor = typeColors[type]
-    this.el.style.borderColor = eraColors[era]
-    this.el.textContent = text // TODO: color
+    const { url } = eraData
+    this.el.style.backgroundImage = `url('${url}')`
+//    this.el.style.backgroundColor = typeColors[type]
+//    this.el.style.borderColor = eraColors[era]
+//    this.el.textContent = text // TODO: color
   }
 }
