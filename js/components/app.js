@@ -9,12 +9,31 @@ const backgroundUrl = '/images/background.png'
 
 const className = '.game'
 const style = {
+  width: '1024px',
+  height: '768px',
+  display: 'grid',
+  gridTemplateColumns: '500px 500px',
+  gridTemplateRows: '100%',
+  left: '50%',
+  top: '50%',
+  transform: 'translate(-50%, -50%)',
+  position: 'absolute',
+  justifyContent: 'space-between'
+}
+
+const backgroundImageStyle = {
   width: '100%',
   height: '100%',
-  backgroundColor: 'black',
-  position: 'absolute',
-  display: 'grid',
-  backgroundImage: `url(${backgroundUrl})`
+  position: 'fixed',
+  backgroundImage: `url(${backgroundUrl})`,
+  backgroundSize: 'cover',
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'center center'
+}
+
+const wrapperStyle = {
+  margin: '10px',
+  display: 'grid'
 }
 
 module.exports = class App {
@@ -22,12 +41,25 @@ module.exports = class App {
     this.universe = new Universe()
     this.inventory = new Inventory()
     this.score = new Score()
-    this.el = el(className,
-      this.score,
-      this.inventory,
-      this.universe,
+    this.leftWrapper = el('.wrapper', this.universe, {
+      style: wrapperStyle
+    })
+    this.rightWrapper = el('.wrapper', this.score, this.inventory, {
+      style: Object.assign({}, wrapperStyle, {
+        display: 'grid',
+        gridTemplateRows: '380px 380px',
+        gridTemplateColumns: '460px',
+        alignContent: 'space-between'
+      })
+    })
+    this.game = el(className,
+      this.leftWrapper,
+      this.rightWrapper,
       {style}
     )
+    this.el = el('.background-image', this.game, {
+      style: backgroundImageStyle
+    })
   }
   update (data) {
     this.universe.update(data)
