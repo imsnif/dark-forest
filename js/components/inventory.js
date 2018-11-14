@@ -1,7 +1,7 @@
-const { el, list } = require('redom')
+const { el, list, setStyle } = require('redom')
+const { dispatch } = require('../util/dispatch')
 
-const { flatList } = require('./statics')
-const Action = require('./action')
+const { eraItems, weaponIndex } = require('./statics')
 
 const className = '.inventory'
 const style = {
@@ -25,12 +25,12 @@ const getNextItem = (era, currentPlayerUsedItems) => {
   }, 1)
 }
 
-const buttonStyle = {
-  backgroundImage: 'url("/images/game-tiles/buttons/age1-0.png")',
+const buttonStyle = (age, index) => ({
+  backgroundImage: `url('/images/game-tiles/buttons/age${age}-${index}.png')`,
   justifySelf: 'center',
   width: '112px',
   height: '108px'
-}
+})
 
 const pirateButtonStyle = {
   backgroundImage: 'url("/images/game-tiles/buttons/pirate.png")',
@@ -50,22 +50,45 @@ const listWrapperStyle = {
   justifySelf: 'center'
 }
 
+const eraWords = [
+  'none',
+  'one',
+  'two',
+  'three'
+]
+
 class Button {
   constructor () {
     this.el = el('.button', {
-      style: buttonStyle
+      onclick: () => {
+        const { type, era, nextIndex } = this.data
+        if (nextIndex < 4) {
+          dispatch(this, 'build', {era, nextIndex})
+        }
+      },
+      style: buttonStyle(1, 0)
     })
   }
-  update (data) {
-
+  update ({type, era, nextIndex}) {
+    this.data = {type, era, nextIndex}
+    setStyle(this.el, buttonStyle(era, nextIndex - 1))
   }
 }
 
 class PirateButton {
   constructor () {
     this.el = el('.pirate-button', {
+      onclick: () => {
+        const { nextIndex } = this.data
+        if (nextIndex < 4) {
+          dispatch(this, 'build', {era: 'n/a', nextIndex: 1})
+        }
+      },
       style: pirateButtonStyle
     })
+  }
+  update (data) {
+    this.data = data
   }
 }
 
@@ -92,18 +115,25 @@ module.exports = class Inventory {
     this.buttonList.update([1, 2, 3])
   }
   update (data) {
-    const currentPlayerUsedItems = data.map(i => flatList[i])
-    const nextFirstEraIndex = getNextItem('one', currentPlayerUsedItems)
-    const nextSecondEraIndex = getNextItem('two', currentPlayerUsedItems)
-    const nextThirdEraIndex = getNextItem('three', currentPlayerUsedItems)
+    const currentPlayerUsedItems = data
+    const nextFirstEraIndex = 1 + currentPlayerUsedItems
+      .filter(i => eraItems('one').includes(i)).length
+    const nextSecondEraIndex = 1 + currentPlayerUsedItems
+      .filter(i => eraItems('two').includes(i)).length
+    const nextThirdEraIndex = 1 + currentPlayerUsedItems
+      .filter(i => eraItems('three').includes(i)).length
+//    const nextSecondEraIndex = getNextItem('two', currentPlayerUsedItems)
+//    const nextThirdEraIndex = getNextItem('three', currentPlayerUsedItems)
     const nextWeaponIndex = currentPlayerUsedItems
-      .filter(i => i.type === 'weapon')
+      .filter(i => i === weaponIndex)
       .length + 1
-//    this.list.update([
-//      {type: 'build', era: 'one', nextIndex: nextFirstEraIndex},
-//      {type: 'build', era: 'two', nextIndex: nextSecondEraIndex},
-//      {type: 'build', era: 'three', nextIndex: nextThirdEraIndex},
-//      {type: 'weapon', nextIndex: nextWeaponIndex}
-//    ])
+    this.buttonList.update([
+      {type: 'build', era: '1', nextIndex: nextFirstEraIndex},
+      {type: 'build', era: '2', nextIndex: nextSecondEraIndex},
+      {type: 'build', era: '3', nextIndex: nextThirdEraIndex}
+    ])
+    this.pirateButton.update(
+      {type: 'weapon', nextIndex: nextWeaponIndex}
+    )
   }
 }

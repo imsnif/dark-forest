@@ -1,5 +1,5 @@
 /* globals experimental DatArchive */
-const { flatList } = require('../components/statics')
+const { wonderIndices, weaponIndex } = require('../components/statics')
 
 function playersReducer (activePlayers) {
   const validSortedStates = activePlayers.sort((a, b) => {
@@ -14,10 +14,13 @@ function playersReducer (activePlayers) {
       : validSortedStates[index + 1].state
     return state.map((actionIndex, eraIndex) => {
       if (
-        flatList[actionIndex].type === 'wonder' &&
+        wonderIndices.includes(actionIndex) &&
+        // flatList[actionIndex].type === 'wonder' &&
         (
-          flatList[adjacentPlayerRight[eraIndex]].type === 'weapon' ||
-          flatList[adjacentPlayerLeft[eraIndex]].type === 'weapon'
+          adjacentPlayerRight[eraIndex] === weaponIndex ||
+          adjacentPlayerLeft[eraIndex] === weaponIndex
+//          flatList[adjacentPlayerRight[eraIndex]].type === 'weapon' ||
+//          flatList[adjacentPlayerLeft[eraIndex]].type === 'weapon'
         )
       ) {
         return 0
@@ -33,7 +36,7 @@ function currentPlayerReducer (players, playerUrl) {
 
 function winnersReducer (players) {
   return players.reduce((winners, state, index) => {
-    const wonderCount = state.filter(e => flatList[e].type === 'wonder')
+    const wonderCount = state.filter(e => wonderIndices.includes(e))
     if (wonderCount.length === 3) {
       return winners.concat(index)
     }
