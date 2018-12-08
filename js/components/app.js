@@ -47,11 +47,17 @@ module.exports = class App {
       this.metaPane,
       {style}
     )
-    this.el = el('.background-image', this.topBar, this.converterModal, this.game, {
-      style: backgroundImageStyle
-    })
+    this.el = el(
+      '.background-image',
+      this.topBar,
+      this.converterModal,
+      this.game,
+      {
+        style: backgroundImageStyle
+      }
+    )
   }
   update (data) {
-
+    this.topBar.update(data)
   }
 }

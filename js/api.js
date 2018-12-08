@@ -16,59 +16,19 @@ module.exports = async (app, selfArchive) => {
     }))
   }
 
-  const initialState = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  const initialActions = 2
+  const initialPoints = 0
+  const initialFusion = 0
+  const initialAntimatter = 0
+  const initialGw = 0
+  store.set('actionsLeft', initialActions)
+  store.set('points', initialPoints)
+  store.set('fusion', initialFusion)
+  store.set('antimatter', initialAntimatter)
+  store.set('gw', initialGw)
+  app.update(store.get())
 
   listen(app, {
-//    switch: async (data) => {
-//      const { source, destination } = data
-//      const currentPlayerIndex = JSON.stringify(store.get('currentPlayerIndex'))
-//      let players = store.get('players')
-//      const currentDestructionScore = store.get('destructionScore') || 0
-//      const sourceEl = players[currentPlayerIndex][source]
-//      const destinationEl = players[currentPlayerIndex][destination]
-//      players[currentPlayerIndex][source] = destinationEl
-//      players[currentPlayerIndex][destination] = sourceEl
-//      const adjacentPlayerLeft =
-//        currentPlayerIndex - 1 >= 0
-//          ? players[currentPlayerIndex - 1]
-//          : players.length > 1
-//          ? players[players.length - 1]
-//          : null
-//      const adjacentPlayerRight =
-//        currentPlayerIndex + 1 < players.length
-//          ? players[currentPlayerIndex + 1]
-//          : players.length > 1
-//          ? players[0]
-//          : null
-//      let destroyedCount = 0
-//      if (
-//        adjacentPlayerLeft &&
-//        wonderIndices.includes(adjacentPlayerLeft[destination]) &&
-//        // flatList[adjacentPlayerLeft[destination]].type === 'wonder' &&
-//        players[currentPlayerIndex][destination] === weaponIndex
-//        // flatList[players[currentPlayerIndex][destination]].type === 'weapon'
-//      ) {
-//        destroyedCount += 1
-//      }
-//      if (
-//        adjacentPlayerRight &&
-//        flatList[adjacentPlayerRight[destination]].type === 'wonder' &&
-//        flatList[players[currentPlayerIndex][destination]].type === 'weapon'
-//      ) {
-//        destroyedCount += 1
-//      }
-//      if (destroyedCount > players.length - 1) {
-//        destroyedCount = players.length - 1
-//        // in this case, both adjacent players are identical, this is an ugly
-//        // quick hack and we need to properly get adjacent players instead
-//      }
-//      set('players', players) // optimistic update
-//      set('destructionScore', currentDestructionScore + destroyedCount)
-//      // ^^ ui only state
-//      await selfArchive.writeFile('/state.json', JSON.stringify(
-//        players[currentPlayerIndex]
-//      ))
-//    },
     action: async (data) => {
       const currentPlayerIndex = JSON.stringify(store.get('currentPlayerIndex'))
       let players = store.get('players')
@@ -144,9 +104,9 @@ module.exports = async (app, selfArchive) => {
     }
   })
 
-  await experimental.datPeers.setSessionData(selfArchive.url)
-
-  await selfArchive.writeFile('/state.json', JSON.stringify(initialState))
-  await selfArchive.writeFile('/timestamp', JSON.stringify(Date.now()))
-  updateGameState(selfArchive, set) // TODO: promise, error, etc.
+//  await experimental.datPeers.setSessionData(selfArchive.url)
+//
+//  await selfArchive.writeFile('/state.json', JSON.stringify(initialState))
+//  await selfArchive.writeFile('/timestamp', JSON.stringify(Date.now()))
+//  updateGameState(selfArchive, set) // TODO: promise, error, etc.
 }

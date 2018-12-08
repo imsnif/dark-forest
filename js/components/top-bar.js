@@ -55,11 +55,11 @@ class TopBarStatus {
 
 module.exports = class TopBar {
   constructor () {
-    this.actionsLeft = new TopBarStatus(actionIcon, 2)
-    this.points = new TopBarStatus(pointsIcon, 100)
-    this.fusion = new TopBarStatus(fusionIcon, 5)
-    this.antimatter = new TopBarStatus(antimatterIcon, 90)
-    this.gw = new TopBarStatus(gwIcon, 1)
+    this.actionsLeft = new TopBarStatus(actionIcon, '???')
+    this.points = new TopBarStatus(pointsIcon, '???')
+    this.fusion = new TopBarStatus(fusionIcon, '???')
+    this.antimatter = new TopBarStatus(antimatterIcon, '???')
+    this.gw = new TopBarStatus(gwIcon, '???')
     this.el = el(className,
       this.actionsLeft,
       this.points,
@@ -72,10 +72,10 @@ module.exports = class TopBar {
   }
   update (data) {
     const { actionsLeft, points, fusion, antimatter, gw } = data
-    this.actionsLeft.textContent = actionsLeft
-    this.points.textContent = points
-    this.fusion.textContent = fusion
-    this.antimatter.textContent = antimatter
-    this.gw.textContent = gw
+    this.actionsLeft.update(actionsLeft)
+    this.points.update(points)
+    this.fusion.update(fusion)
+    this.antimatter.update(antimatter)
+    this.gw.update(gw)
   }
 }
