@@ -1,9 +1,11 @@
 'use strict'
 
 const { el } = require('redom')
-const Universe = require('./universe')
-const Inventory = require('./inventory')
-const Score = require('./score')
+const TopBar = require('./top-bar')
+const UniversePane = require('./universe-pane')
+const LogPane = require('./log-pane')
+const MetaPane = require('./meta-pane')
+const ConverterModal = require('./converter-modal')
 
 const backgroundUrl = '/images/background.png'
 
@@ -12,7 +14,7 @@ const style = {
   width: '1024px',
   height: '768px',
   display: 'grid',
-  gridTemplateColumns: '500px 500px',
+  gridTemplateColumns: '229px 491px 240px',
   gridTemplateRows: '100%',
   left: '50%',
   top: '50%',
@@ -31,42 +33,25 @@ const backgroundImageStyle = {
   backgroundPosition: 'center center'
 }
 
-const wrapperStyle = {
-  margin: '10px',
-  display: 'grid'
-}
-
 module.exports = class App {
   constructor () {
-    this.universe = new Universe()
-    this.inventory = new Inventory()
-    this.score = new Score()
-    this.leftWrapper = el('.wrapper', this.universe, {
-      style: wrapperStyle
-    })
-    this.rightWrapper = el('.wrapper', this.score, this.inventory, {
-      style: Object.assign({}, wrapperStyle, {
-        display: 'grid',
-        gridTemplateRows: '380px 380px',
-        gridTemplateColumns: '460px',
-        alignContent: 'space-between'
-      })
-    })
+    this.topBar = new TopBar()
+    this.logPane = new LogPane()
+    this.universePane = new UniversePane()
+    this.metaPane = new MetaPane()
+    this.converterModal = new ConverterModal()
+
     this.game = el(className,
-      this.leftWrapper,
-      this.rightWrapper,
+      this.logPane,
+      this.universePane,
+      this.metaPane,
       {style}
     )
-    this.el = el('.background-image', this.game, {
+    this.el = el('.background-image', this.topBar, this.converterModal, this.game, {
       style: backgroundImageStyle
     })
   }
   update (data) {
-    this.universe.update(data)
-    this.inventory.update(data.players[data.currentPlayerIndex])
-    this.score.update({
-      destructionScore: data.destructionScore,
-      winScore: data.winScore
-    })
+
   }
 }

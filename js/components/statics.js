@@ -153,31 +153,5 @@ const findItemIndex = (era, index) => {
   return flatList.indexOf(item)
 }
 
-// TODO: CONTINUE HERE - write flat list according to image numbers
-// const flatList = [ // TODO: just write flat list
-//   {type: 'none', era: 'none', text: '...'}
-// ].concat(Object.keys(statics).reduce((list, type) => {
-//   if (type === 'weapons') {
-//     const weaponList = Object.keys(statics[type]).reduce((wList, era) => {
-//       wList.push(statics[type][era])
-//       return wList
-//     }, [])
-//     return list.concat(weaponList)
-//   } else if (type === 'wonders') {
-//     const wonderList = Object.keys(statics[type]).reduce((wList, era) => {
-//       wList.push(statics[type][era])
-//       return wList
-//     }, [])
-//     return list.concat(wonderList)
-//   } else if (type === 'tech') {
-//     const techList = Object.keys(statics[type]).reduce((tList, era) => {
-//       tList.push(statics[type][era].two)
-//       tList.push(statics[type][era].three)
-//       return tList
-//     }, [])
-//     return list.concat(techList)
-//   }
-//   return list
-// }, []))
 module.exports =
   {statics, flatList, wonderIndices, weaponIndex, eraItems, findItemIndex}
