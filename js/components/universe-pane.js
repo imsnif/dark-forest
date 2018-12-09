@@ -18,22 +18,24 @@ module.exports = class UniversePane {
   constructor () {
     this.playerScores = new PlayerScores()
     this.gameControls = new GameControls()
+    this.gameBoard = new GameBoard()
     this.el = el(
       className,
       this.playerScores,
       new EnergyConverterStrip(),
-      new GameBoard(),
+      this.gameBoard,
       this.gameControls,
       {style}
     )
   }
   update (data) {
-    const { currentPlayer, opponents } = data
-    const allPlayers = opponents
+    const { currentPlayer, opponents, selectedBuilding } = data
+    const allPlayers = opponents // TODO: pad for less than 5 players
       .slice(0, 2)
       .concat([currentPlayer])
       .concat(opponents.slice(2, 4))
     this.playerScores.update(allPlayers)
     this.gameControls.update(currentPlayer)
+    this.gameBoard.update({allPlayers, selectedBuilding})
   }
 }

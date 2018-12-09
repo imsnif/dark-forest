@@ -16,13 +16,15 @@ module.exports = async (app, selfArchive) => {
     }))
   }
 
+  const emptyTiles = Array(5).fill({name: 'empty'})
   const initialCurrentPlayerState = {
     name: 'current',
     actionsLeft: 2,
-    points: 234,
+    points: 500,
     fusion: 0,
     antimatter: 0,
-    gw: 0
+    gw: 0,
+    tiles: emptyTiles
   }
   // ###################### <placeholder game state> ##########################
   const opponents = [ // TODO: this is just a placeholder
@@ -32,7 +34,14 @@ module.exports = async (app, selfArchive) => {
       points: 123,
       fusion: 1,
       antimatter: 50,
-      gw: 12
+      gw: 12,
+      tiles: [
+        { name: 'fusion' },
+        { name: 'wormhole' },
+        { name: 'empty' },
+        { name: 'empty' },
+        { name: 'fusion' }
+      ]
     },
     {
       name: 'two',
@@ -40,7 +49,14 @@ module.exports = async (app, selfArchive) => {
       points: 123,
       fusion: 1,
       antimatter: 50,
-      gw: 12
+      gw: 12,
+      tiles: [
+        { name: 'gw' },
+        { name: 'antimatter' },
+        { name: 'empty' },
+        { name: 'wormhole' },
+        { name: 'empty' }
+      ]
     },
     {
       name: 'three',
@@ -48,7 +64,14 @@ module.exports = async (app, selfArchive) => {
       points: 123,
       fusion: 1,
       antimatter: 50,
-      gw: 12
+      gw: 12,
+      tiles: [
+        { name: 'empty' },
+        { name: 'empty' },
+        { name: 'wormhole' },
+        { name: 'wormhole' },
+        { name: 'fusion' }
+      ]
     },
     {
       name: 'four',
@@ -56,7 +79,14 @@ module.exports = async (app, selfArchive) => {
       points: 123,
       fusion: 1,
       antimatter: 50,
-      gw: 12
+      gw: 12,
+      tiles: [
+        { name: 'gw' },
+        { name: 'empty' },
+        { name: 'gw' },
+        { name: 'empty' },
+        { name: 'fusion' }
+      ]
     }
   ]
   // ###################### </placeholder game state> ##########################
@@ -67,6 +97,27 @@ module.exports = async (app, selfArchive) => {
   listen(app, {
     selectBuilding: async function selectBuilding (name) {
       set('selectedBuilding', name)
+    },
+    placeSelectedBuilding: async function placeSelectedBuilding (tileIndex) {
+//      const currentPoints = store.get('currentPlayer.points')
+//      const actionsLeft = store.get('currentPlayer.actionsLeft')
+      const currentTiles = store.get('currentPlayer.tiles')
+      const selectedBuilding = store.get('selectedBuilding')
+      const newTiles = currentTiles.slice(0, tileIndex).concat({
+        name: selectedBuilding ? selectedBuilding.name : 'empty'
+      }).concat(currentTiles.slice(tileIndex + 1))
+      set('selectedBuilding', null) // TODO: move to reset ui state or smth
+      set('currentPlayer.tiles', newTiles)
+//      set(
+//        'currentPlayer.points',
+//        Number(currentPoints) - Number(selectedBuilding.points)
+//      )
+//      set(
+//        'currentPlayer.actionsLeft',
+//        Number(actionsLeft) - Number(selectedBuilding.actions)
+//      )
+      // TODO: move currentPlayer manipulation to game state, leave as
+      // optimistic update here
     },
     action: async (data) => {
       const currentPlayerIndex = JSON.stringify(store.get('currentPlayerIndex'))

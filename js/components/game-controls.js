@@ -30,12 +30,12 @@ class ControlPane {
   }
   update ({building, currentPlayer}) {
     const isDisabled =
-      building.actions > currentPlayer.actions ||
+      building.actions > currentPlayer.actionsLeft ||
       building.points > currentPlayer.points
     this.el = el('img', {
       onclick: () => {
         if (isDisabled) return
-        dispatch(this, 'selectBuilding', building.name)
+        dispatch(this, 'selectBuilding', building)
       },
       src: isDisabled
         ? `/images/build-${building.name}-button-disabled.png`
