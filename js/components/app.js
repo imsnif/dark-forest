@@ -58,6 +58,8 @@ module.exports = class App {
     )
   }
   update (data) {
-    this.topBar.update(data)
+    const { currentPlayer } = data
+    this.topBar.update(currentPlayer)
+    this.universePane.update(data)
   }
 }

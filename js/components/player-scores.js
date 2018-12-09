@@ -83,14 +83,6 @@ class Score {
   }
 }
 
-const playerDataPlaceholder = {
-  name: 'foo',
-  points: 133,
-  fusion: 666,
-  antimatter: 666,
-  gw: 0
-}
-
 module.exports = class PlayerScores {
   constructor () {
     const container = el('.playerScores', { style: {
@@ -101,14 +93,8 @@ module.exports = class PlayerScores {
       gridGap: '10px'
     }})
     this.el = list(container, Score)
-    this.el.update(Array(5).fill(playerDataPlaceholder))
   }
   update (data) {
-    const { actionsLeft, points, fusion, antimatter, gw } = data
-    this.actionsLeft.textContent = actionsLeft
-    this.points.textContent = points
-    this.fusion.textContent = fusion
-    this.antimatter.textContent = antimatter
-    this.gw.textContent = gw
+    this.el.update(data)
   }
 }

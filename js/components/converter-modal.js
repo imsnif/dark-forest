@@ -17,6 +17,7 @@ module.exports = class ConverterModal {
       new ConverterControlsStrip(),
       {
         style: {
+          visibility: 'hidden',
           display: 'grid',
           gridTemplateRows: '50px 145px 110px 215px',
           gridAutoColums: '100%',

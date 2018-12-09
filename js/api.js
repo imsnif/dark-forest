@@ -16,16 +16,52 @@ module.exports = async (app, selfArchive) => {
     }))
   }
 
-  const initialActions = 2
-  const initialPoints = 0
-  const initialFusion = 0
-  const initialAntimatter = 0
-  const initialGw = 0
-  store.set('actionsLeft', initialActions)
-  store.set('points', initialPoints)
-  store.set('fusion', initialFusion)
-  store.set('antimatter', initialAntimatter)
-  store.set('gw', initialGw)
+  const initialCurrentPlayerState = {
+    name: 'current',
+    actionsLeft: 2,
+    points: 234,
+    fusion: 0,
+    antimatter: 0,
+    gw: 0
+  }
+  // ###################### <placeholder game state> ##########################
+  const opponents = [ // TODO: this is just a placeholder
+    {
+      name: 'one',
+      actionsLeft: 2,
+      points: 123,
+      fusion: 1,
+      antimatter: 50,
+      gw: 12
+    },
+    {
+      name: 'two',
+      actionsLeft: 2,
+      points: 123,
+      fusion: 1,
+      antimatter: 50,
+      gw: 12
+    },
+    {
+      name: 'three',
+      actionsLeft: 2,
+      points: 123,
+      fusion: 1,
+      antimatter: 50,
+      gw: 12
+    },
+    {
+      name: 'four',
+      actionsLeft: 2,
+      points: 123,
+      fusion: 1,
+      antimatter: 50,
+      gw: 12
+    }
+  ]
+  // ###################### </placeholder game state> ##########################
+  store.set('currentPlayer', initialCurrentPlayerState)
+  store.set('opponents', opponents)
   app.update(store.get())
 
   listen(app, {
