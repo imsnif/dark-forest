@@ -17,12 +17,13 @@ const style = {
 module.exports = class UniversePane {
   constructor () {
     this.playerScores = new PlayerScores()
+    this.gameControls = new GameControls()
     this.el = el(
       className,
       this.playerScores,
       new EnergyConverterStrip(),
       new GameBoard(),
-      new GameControls(),
+      this.gameControls,
       {style}
     )
   }
@@ -33,5 +34,6 @@ module.exports = class UniversePane {
       .concat([currentPlayer])
       .concat(opponents.slice(2, 4))
     this.playerScores.update(allPlayers)
+    this.gameControls.update(currentPlayer)
   }
 }

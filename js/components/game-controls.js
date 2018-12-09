@@ -1,15 +1,51 @@
 const { el, list } = require('redom')
+const { dispatch } = require('../util/dispatch')
+
+const buildings = [
+  {
+    name: 'fusion',
+    actions: 1,
+    points: 0
+  },
+  {
+    name: 'antimatter',
+    actions: 1,
+    points: 20
+  },
+  {
+    name: 'gw',
+    actions: 1,
+    points: 400
+  },
+  {
+    name: 'wormhole',
+    actions: 1,
+    points: 10
+  }
+]
 
 class ControlPane {
   constructor () {
     this.el = el('div')
   }
-  update (actionName) {
+  update ({building, currentPlayer}) {
+    const isDisabled =
+      building.actions > currentPlayer.actions ||
+      building.points > currentPlayer.points
     this.el = el('img', {
-      src: `/images/${actionName}-button.png`,
+      onclick: () => {
+        if (isDisabled) return
+        dispatch(this, 'selectBuilding', building.name)
+      },
+      src: isDisabled
+        ? `/images/build-${building.name}-button-disabled.png`
+        : `/images/build-${building.name}-button.png`,
       style: {
         alignSelf: 'center',
-        justifySelf: 'center'
+        justifySelf: 'center',
+        userSelect: 'none',
+        '-webkit-user-drag': 'none',
+        cursor: isDisabled ? 'not-allowed' : 'pointer'
       }
     })
   }
@@ -24,19 +60,8 @@ module.exports = class GameControls {
       alignContent: 'end'
     }})
     this.el = list(container, ControlPane)
-    this.el.update([
-      'build-fusion',
-      'build-antimatter',
-      'build-gw',
-      'build-wormhole'
-    ])
   }
-  update (data) {
-    const { actionsLeft, points, fusion, antimatter, gw } = data
-    this.actionsLeft.textContent = actionsLeft
-    this.points.textContent = points
-    this.fusion.textContent = fusion
-    this.antimatter.textContent = antimatter
-    this.gw.textContent = gw
+  update (currentPlayer) {
+    this.el.update(buildings.map(building => ({building, currentPlayer})))
   }
 }

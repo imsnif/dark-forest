@@ -65,6 +65,9 @@ module.exports = async (app, selfArchive) => {
   app.update(store.get())
 
   listen(app, {
+    selectBuilding: async function selectBuilding (name) {
+      set('selectedBuilding', name)
+    },
     action: async (data) => {
       const currentPlayerIndex = JSON.stringify(store.get('currentPlayerIndex'))
       let players = store.get('players')
