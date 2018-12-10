@@ -1,9 +1,11 @@
-const { el } = require('redom')
+const { el, list, place } = require('redom')
 const colors = require('./colors')
 
 const fusionIcon = '/images/top-bar-fusion-icon.png'
 const antimatterIcon = '/images/top-bar-antimatter-icon.png'
 const gwIcon = '/images/top-bar-gw-icon.png'
+
+const { dispatch } = require('../util/dispatch')
 
 class EnergyIcons {
   constructor () {
@@ -35,9 +37,17 @@ class EnergyIcons {
 }
 
 class Control {
-  constructor () {
+  constructor (energyType) {
+    this.energyType = energyType
     this.upArrow = el('img', {
-      src: '/images/up-arrow-button.png'
+      src: '/images/up-arrow-button.png',
+      onclick: () => {
+        dispatch(this, 'sellEnergy', {
+          energyType,
+          converterIndex: this.converterIndex,
+          amount: 1
+        })
+      }
     })
     this.number = el('.controlText', {
       textContent: '0',
@@ -49,7 +59,14 @@ class Control {
       }
     })
     this.downArrow = el('img', {
-      src: '/images/down-arrow-button.png'
+      src: '/images/down-arrow-button.png',
+      onclick: () => {
+        dispatch(this, 'sellEnergy', {
+          energyType,
+          converterIndex: this.converterIndex,
+          amount: -1
+        })
+      }
     })
     this.el = el(
       '.control',
@@ -65,16 +82,17 @@ class Control {
       }
     )
   }
-  update () {
-
+  update ({converterIndex, converter}) {
+    this.converterIndex = converterIndex
+    this.number.textContent = converter[this.energyType]
   }
 }
 
 class ControlStrip {
   constructor () {
-    this.fusionControl = new Control()
-    this.antimatterControl = new Control()
-    this.gwControl = new Control()
+    this.fusionControl = new Control('fusion')
+    this.antimatterControl = new Control('antimatter')
+    this.gwControl = new Control('gw')
     this.el = el(
       '.controlStrip',
       this.fusionControl,
@@ -92,8 +110,10 @@ class ControlStrip {
       }
     )
   }
-  update () {
-
+  update ({converterIndex, converter, player}) {
+    this.fusionControl.update({converterIndex, converter})
+    this.antimatterControl.update({converterIndex, converter})
+    this.gwControl.update({converterIndex, converter})
   }
 }
 
@@ -110,7 +130,7 @@ class ConverterControls {
       }
     })
     this.energyIcons = new EnergyIcons()
-    this.controlStrip = new ControlStrip()
+    this.controlStrip = place(ControlStrip)
     this.el = el(
       '.controls',
       this.name,
@@ -130,55 +150,17 @@ class ConverterControls {
     )
   }
   update (data) {
-
-  }
-}
-
-class OpponentPlayerControls {
-  constructor () {
-    this.name = el('.name', {
-      textContent: '????',
-      style: {
-        textTransform: 'uppercase',
-        fontSize: '30px',
-        color: colors.information,
-        textAlign: 'center',
-        fontWeight: 'bold'
-      }
-    })
-    this.energyIcons = new EnergyIcons()
-    this.el = el(
-      '.controls',
-      this.name,
-      this.energyIcons,
-      {
-        style: {
-          backgroundImage: 'url(/images/converter-opponent-player-background.png)',
-          backgroundSize: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center center',
-          alignContent: 'space-between',
-          display: 'grid',
-          gridTemplateRows: '35px 25px 75px'
-        }
-      }
-    )
-  }
-  update (data) {
-
+    if (data.player) {
+      this.name.textContent = data.player.name
+    }
+    this.controlStrip.update(data.isCurrentPlayer, data)
   }
 }
 
 module.exports = class ConverterControlsStrip {
   constructor () {
-    this.opponentPlayerLeft = new OpponentPlayerControls()
-    this.currentPlayerControls = new ConverterControls()
-    this.opponentPlayerRight = new OpponentPlayerControls()
-    this.el = el(
+    const container = el(
       '.converterControlsStrip',
-      this.opponentPlayerLeft,
-      this.currentPlayerControls,
-      this.opponentPlayerRight,
       {
         style: {
           display: 'grid',
@@ -189,8 +171,15 @@ module.exports = class ConverterControlsStrip {
         }
       }
     )
+    this.el = list(container, ConverterControls)
+    this.el.update([{}, {}, {}])
   }
-  update (data) {
-
+  update ({players, converter, converterIndex, currentPlayerIndex}) {
+    this.el.update(Object.keys(players).map((playerIndex, index) => ({
+      converterIndex,
+      converter,
+      player: players[playerIndex],
+      isCurrentPlayer: Number(currentPlayerIndex) === Number(index)
+    })))
   }
 }

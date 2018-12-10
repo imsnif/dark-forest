@@ -11,10 +11,11 @@ module.exports = class ConverterModal {
         justifySelf: 'center'
       }
     })
+    this.converterControlsStrip = new ConverterControlsStrip()
     this.el = el(
       '.converterModal',
       this.minusActionIndication,
-      new ConverterControlsStrip(),
+      this.converterControlsStrip,
       {
         style: {
           visibility: 'hidden',
@@ -33,11 +34,49 @@ module.exports = class ConverterModal {
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center center',
           gridGap: '10px'
+        },
+        onclick: e => {
+          e.stopPropagation() // TODO: prevent modal hiding better
         }
       }
     )
   }
   update (data) {
-
+    const {
+      converterModalOpen,
+      currentPlayer,
+      opponents,
+      converter1,
+      converter2,
+      converter3
+    } = data
+    const converters = { // TODO: do this in store, preferably as array
+      1: converter1,
+      2: converter2,
+      3: converter3
+    }
+    if (converterModalOpen) {
+      const allPlayers = opponents // TODO: move this computation outside
+        .slice(0, 2)
+        .concat([currentPlayer])
+        .concat(opponents.slice(2, 4))
+      const players = {
+        1: allPlayers[converterModalOpen - 1],
+        2: allPlayers[converterModalOpen],
+        3: allPlayers[converterModalOpen + 1]
+      }
+      this.converterControlsStrip.update({
+        players,
+        converter: converters[converterModalOpen],
+        converterIndex: converterModalOpen,
+        currentPlayerIndex: Number(converterModalOpen) === 1 // TODO: better
+          ? 2 : Number(converterModalOpen) === 2
+            ? 1 : Number(converterModalOpen) === 3
+              ? 0 : null
+      })
+      this.el.style.visibility = 'visible'
+    } else {
+      this.el.style.visibility = 'hidden'
+    }
   }
 }

@@ -26,6 +26,11 @@ module.exports = async (app, selfArchive) => {
     gw: 0,
     tiles: emptyTiles
   }
+  const initialConverterState = {
+    fusion: 0,
+    antimatter: 0,
+    gw: 0
+  }
   // ###################### <placeholder game state> ##########################
   const opponents = [ // TODO: this is just a placeholder
     {
@@ -92,6 +97,9 @@ module.exports = async (app, selfArchive) => {
   // ###################### </placeholder game state> ##########################
   store.set('currentPlayer', initialCurrentPlayerState)
   store.set('opponents', opponents)
+  store.set('converter1', initialConverterState)
+  store.set('converter2', initialConverterState)
+  store.set('converter3', initialConverterState)
   app.update(store.get())
 
   listen(app, {
@@ -118,6 +126,16 @@ module.exports = async (app, selfArchive) => {
 //      )
       // TODO: move currentPlayer manipulation to game state, leave as
       // optimistic update here
+    },
+    openConverterModal: function openConverterModal (indexOnBoard) {
+      set('converterModalOpen', indexOnBoard)
+    },
+    sellEnergy: function sellEnergy ({energyType, converterIndex, amount}) {
+      const currentEnergyForSale = store.get(`converter${converterIndex}`)
+      const newEnergyForSale = Object.assign({}, currentEnergyForSale, {
+        [energyType]: currentEnergyForSale[energyType] + amount
+      })
+      set(`converter${converterIndex}`, newEnergyForSale)
     },
     action: async (data) => {
       const currentPlayerIndex = JSON.stringify(store.get('currentPlayerIndex'))

@@ -1,4 +1,5 @@
 const { el } = require('redom')
+const { dispatch } = require('../util/dispatch')
 
 class Converter {
   constructor () {
@@ -11,11 +12,29 @@ class Converter {
   }
 }
 
+class ClickableConverter {
+  constructor (indexOnBoard) {
+    this.el = el(
+      'img',
+      {
+        src: '/images/energy-converter.png',
+        onclick: e => {
+          e.stopPropagation() // TODO: prevent modal hiding better
+          dispatch(this, 'openConverterModal', indexOnBoard)
+        }
+      }
+    )
+  }
+  update () {
+
+  }
+}
+
 class CenterFrame {
   constructor () {
-    this.rightConverter = new Converter()
-    this.centerConverter = new Converter()
-    this.leftConverter = new Converter()
+    this.rightConverter = new ClickableConverter(1)
+    this.centerConverter = new ClickableConverter(2)
+    this.leftConverter = new ClickableConverter(3)
     this.el = el(
       '.center-frame',
       this.rightConverter,

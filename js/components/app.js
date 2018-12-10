@@ -7,6 +7,8 @@ const LogPane = require('./log-pane')
 const MetaPane = require('./meta-pane')
 const ConverterModal = require('./converter-modal')
 
+const { dispatch } = require('../util/dispatch')
+
 const backgroundUrl = '/images/background.png'
 
 const className = '.game'
@@ -53,7 +55,10 @@ module.exports = class App {
       this.converterModal,
       this.game,
       {
-        style: backgroundImageStyle
+        style: backgroundImageStyle,
+        onclick: () => {
+          dispatch(this, 'openConverterModal', null)
+        }
       }
     )
   }
@@ -61,5 +66,6 @@ module.exports = class App {
     const { currentPlayer } = data
     this.topBar.update(currentPlayer)
     this.universePane.update(data)
+    this.converterModal.update(data)
   }
 }

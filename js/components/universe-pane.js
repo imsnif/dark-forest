@@ -19,10 +19,11 @@ module.exports = class UniversePane {
     this.playerScores = new PlayerScores()
     this.gameControls = new GameControls()
     this.gameBoard = new GameBoard()
+    this.energyConverterStrip = new EnergyConverterStrip()
     this.el = el(
       className,
       this.playerScores,
-      new EnergyConverterStrip(),
+      this.energyConverterStrip,
       this.gameBoard,
       this.gameControls,
       {style}
