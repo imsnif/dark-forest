@@ -17,15 +17,19 @@ const style = {
 
 module.exports = class MetaPane {
   constructor () {
-    this.el = el(className,
-      new ClockCount(),
+    this.clockCount = new ClockCount()
+    this.nextTurnPrediction = new NextTurnPrediction()
+    this.el = el(
+      className,
+      this.clockCount,
       new MetaDownArrow(),
-      new NextTurnPrediction(),
+      this.nextTurnPrediction,
       new MetaControls(),
       {style}
     )
   }
-  update (data) {
-
+  update ({ time, nextTurnPredictionInfo }) {
+    this.clockCount.update(time)
+    this.nextTurnPrediction.update({nextTurnPredictionInfo})
   }
 }

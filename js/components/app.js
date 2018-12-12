@@ -63,9 +63,10 @@ module.exports = class App {
     )
   }
   update (data) {
-    const { currentPlayer } = data
+    const { currentPlayer, time, nextTurnPredictionInfo } = data
     this.topBar.update(currentPlayer)
     this.universePane.update(data)
     this.converterModal.update(data)
+    this.metaPane.update({time, nextTurnPredictionInfo})
   }
 }

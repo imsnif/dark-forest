@@ -34,7 +34,7 @@ module.exports = class ClockCount {
       }
     )
   }
-  update (timeString) {
-    this.countDown.textContent = timeString
+  update (time) {
+    this.countDown.textContent = time
   }
 }

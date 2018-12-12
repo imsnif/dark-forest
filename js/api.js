@@ -100,6 +100,15 @@ module.exports = async (app, selfArchive) => {
   store.set('converter1', initialConverterState)
   store.set('converter2', initialConverterState)
   store.set('converter3', initialConverterState)
+  store.set('time', '01:00')
+  store.set('nextTurnPredictionInfo.points.gain', 0)
+  store.set('nextTurnPredictionInfo.points.loss', 0)
+  store.set('nextTurnPredictionInfo.fusion.gain', 0)
+  store.set('nextTurnPredictionInfo.fusion.loss', 0)
+  store.set('nextTurnPredictionInfo.antimatter.gain', 0)
+  store.set('nextTurnPredictionInfo.antimatter.loss', 0)
+  store.set('nextTurnPredictionInfo.gw.gain', 0)
+  store.set('nextTurnPredictionInfo.gw.loss', 0)
   app.update(store.get())
 
   listen(app, {

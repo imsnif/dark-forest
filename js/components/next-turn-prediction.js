@@ -131,7 +131,28 @@ module.exports = class NextTurnPrediction {
       }
     ])
   }
-  update (data) {
-
+  update ({nextTurnPredictionInfo}) {
+    this.el.update([
+      {
+        icon: pointsIcon,
+        gain: nextTurnPredictionInfo.points.gain,
+        loss: nextTurnPredictionInfo.points.loss
+      },
+      {
+        icon: fusionIcon,
+        gain: nextTurnPredictionInfo.fusion.gain,
+        loss: nextTurnPredictionInfo.fusion.loss
+      },
+      {
+        icon: antimatterIcon,
+        gain: nextTurnPredictionInfo.antimatter.gain,
+        loss: nextTurnPredictionInfo.antimatter.loss
+      },
+      {
+        icon: gwIcon,
+        gain: nextTurnPredictionInfo.gw.gain,
+        loss: nextTurnPredictionInfo.gw.loss
+      }
+    ])
   }
 }
