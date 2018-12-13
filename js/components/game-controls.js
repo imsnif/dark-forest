@@ -1,28 +1,6 @@
 const { el, list } = require('redom')
 const { dispatch } = require('../util/dispatch')
-
-const buildings = [
-  {
-    name: 'fusion',
-    actions: 1,
-    points: 0
-  },
-  {
-    name: 'antimatter',
-    actions: 1,
-    points: 20
-  },
-  {
-    name: 'gw',
-    actions: 1,
-    points: 400
-  },
-  {
-    name: 'wormhole',
-    actions: 1,
-    points: 10
-  }
-]
+const { buildingData } = require('./statics')
 
 class ControlPane {
   constructor () {
@@ -62,6 +40,12 @@ module.exports = class GameControls {
     this.el = list(container, ControlPane)
   }
   update (currentPlayer) {
-    this.el.update(buildings.map(building => ({building, currentPlayer})))
+    const buildableBuildings = Object.keys(buildingData)
+      .filter(name => name !== 'empty')
+      .map(name => ({
+        building: Object.assign({}, buildingData[name], {name}),
+        currentPlayer
+      }))
+    this.el.update(buildableBuildings)
   }
 }

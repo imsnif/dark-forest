@@ -153,5 +153,34 @@ const findItemIndex = (era, index) => {
   return flatList.indexOf(item)
 }
 
+const buildingData = {
+  fusion: {
+    actions: 1,
+    points: 0,
+    gain: {
+      fusion: 20
+    }
+  },
+  antimatter: {
+    actions: 1,
+    points: 20,
+    gain: {
+      antimatter: 10
+    }
+  },
+  gw: {
+    actions: 1,
+    points: 400,
+    gain: {
+      gw: 5
+    }
+  },
+  wormhole: {
+    actions: 1,
+    points: 10
+  },
+  empty: {}
+}
+
 module.exports =
-  {statics, flatList, wonderIndices, weaponIndex, eraItems, findItemIndex}
+  {statics, buildingData, flatList, wonderIndices, weaponIndex, eraItems, findItemIndex}

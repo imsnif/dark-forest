@@ -3,24 +3,98 @@
 const { listen } = require('./util/dispatch')
 const Store = require('@redom/store')
 const { updateGameState } = require('./commands/update-game-state')
-const { wonderIndices, weaponIndex, findItemIndex } = require('./components/statics')
+const {
+  buildingData,
+  wonderIndices,
+  weaponIndex,
+  findItemIndex
+} = require('./components/statics')
+
+function verifyPlayerStateChange (oldState, newState) {
+  const newTiles = newState.tiles.filter((tile, index) => {
+    return oldState.tiles[index].name !== tile.name
+  })
+  const statDifferences = newTiles.reduce((acc, tile) => {
+    const buildingInfo = buildingData[tile.name]
+    acc.points += buildingInfo.points
+    acc.actions += buildingInfo.actions
+    return acc
+  }, {points: 0, actions: 0})
+  const actionsAreNotNegative = newState.actionsLeft >= 0
+  const pointsAreNotNegative = newState.points >= 0
+  const enoughActionsWereDetracted =
+    oldState.actionsLeft - statDifferences.actions === newState.actionsLeft
+  const enoughPointsWereDetracted =
+    oldState.points - statDifferences.points === newState.points
+  return (
+    actionsAreNotNegative &&
+    pointsAreNotNegative &&
+    enoughActionsWereDetracted &&
+    enoughPointsWereDetracted
+  )
+}
+
+function calculateNextTurnPrediction (state) {
+  return state.tiles.reduce((acc, tile) => {
+    const buildingInfo = buildingData[tile.name]
+    Object.keys(buildingInfo.gain || {}).forEach(resource => {
+      const pointCount = buildingInfo.gain[resource]
+      acc[resource].gain += pointCount
+    })
+    Object.keys(buildingInfo.loss || {}).forEach(resource => {
+      const pointCount = buildingInfo.loss[resource]
+      acc[resource].loss += pointCount
+    })
+    return acc
+  }, {
+    points: { gain: 0, loss: 0 },
+    fusion: { gain: 0, loss: 0 },
+    antimatter: { gain: 0, loss: 0 },
+    gw: { gain: 0, loss: 0 }
+  })
+}
 
 module.exports = async (app, selfArchive) => {
   const store = new Store()
   let updating
-  const set = (path, value) => {
+  const set = (path, value) => { // TODO: change name to setUi
     store.set(path, value)
     updating || (updating = window.requestAnimationFrame(() => {
       updating = false
       app.update(store.get())
     }))
   }
+  const resetUi = () => {
+    set('selectedBuilding', null)
+  }
+
+  const getCurrentPlayerState = async () => {
+    try {
+      const state = await selfArchive.readFile('/state.json')
+      return JSON.parse(state)
+    } catch (e) {
+      console.error('failed to getCurrentPlayerState', e)
+    }
+  }
+  const setCurrentPlayerState = async newState => {
+    try {
+      const nextTurnPredictionInfo = calculateNextTurnPrediction(newState)
+      await selfArchive.writeFile('/state.json', JSON.stringify(
+        newState
+      ))
+      set('currentPlayer', newState)
+      set('nextTurnPredictionInfo', nextTurnPredictionInfo)
+    } catch (e) {
+      console.error('failed to setCurrentPlayerState', e)
+      // TBD
+    }
+  }
 
   const emptyTiles = Array(5).fill({name: 'empty'})
   const initialCurrentPlayerState = {
     name: 'current',
     actionsLeft: 2,
-    points: 500,
+    points: 410,
     fusion: 0,
     antimatter: 0,
     gw: 0,
@@ -95,7 +169,7 @@ module.exports = async (app, selfArchive) => {
     }
   ]
   // ###################### </placeholder game state> ##########################
-  store.set('currentPlayer', initialCurrentPlayerState)
+  await setCurrentPlayerState(initialCurrentPlayerState)
   store.set('opponents', opponents)
   store.set('converter1', initialConverterState)
   store.set('converter2', initialConverterState)
@@ -116,25 +190,37 @@ module.exports = async (app, selfArchive) => {
       set('selectedBuilding', name)
     },
     placeSelectedBuilding: async function placeSelectedBuilding (tileIndex) {
-//      const currentPoints = store.get('currentPlayer.points')
-//      const actionsLeft = store.get('currentPlayer.actionsLeft')
-      const currentTiles = store.get('currentPlayer.tiles')
       const selectedBuilding = store.get('selectedBuilding')
-      const newTiles = currentTiles.slice(0, tileIndex).concat({
-        name: selectedBuilding ? selectedBuilding.name : 'empty'
-      }).concat(currentTiles.slice(tileIndex + 1))
-      set('selectedBuilding', null) // TODO: move to reset ui state or smth
-      set('currentPlayer.tiles', newTiles)
-//      set(
-//        'currentPlayer.points',
-//        Number(currentPoints) - Number(selectedBuilding.points)
-//      )
-//      set(
-//        'currentPlayer.actionsLeft',
-//        Number(actionsLeft) - Number(selectedBuilding.actions)
-//      )
-      // TODO: move currentPlayer manipulation to game state, leave as
-      // optimistic update here
+      if (!selectedBuilding) return
+      const buildingInfo = buildingData[selectedBuilding.name] // TODO: add to statics
+
+      const playerState = await getCurrentPlayerState()
+      const copyWithInsertedTile =
+        (tiles, tileToInsert, insertAt) => tiles
+          .slice(0, insertAt)
+          .concat(tileToInsert)
+          .concat(tiles.slice(insertAt + 1))
+      const desiredNewState = Object.assign(
+        {},
+        playerState,
+        {
+          tiles: copyWithInsertedTile(
+            playerState.tiles,
+            {name: selectedBuilding.name},
+            tileIndex
+          ),
+          actionsLeft: playerState.actionsLeft - buildingInfo.actions,
+          points: playerState.points - buildingInfo.points
+        }
+      )
+      const changePossible = verifyPlayerStateChange(
+        playerState,
+        desiredNewState
+      )
+      if (changePossible) {
+        await setCurrentPlayerState(desiredNewState)
+      }
+      resetUi()
     },
     openConverterModal: function openConverterModal (indexOnBoard) {
       set('converterModalOpen', indexOnBoard)
