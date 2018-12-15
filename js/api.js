@@ -160,11 +160,10 @@ function predictEnergyGain (state) {
 function predictPointGain (state) {
   const converters = extractConverters(state)
   const fusionSold = cappedEnergyFromConverters('fusion', state)
-  console.log('fusionSold', fusionSold)
   const antimatterSold = cappedEnergyFromConverters('antimatter', state)
   const gwSold = cappedEnergyFromConverters('gw', state)
   const pointsFromFusion = fusionSold * energyMultipliers.fusion
-  const pointsFromAntimatter = antimatterSold * energyMultipliers.antimatterSold
+  const pointsFromAntimatter = antimatterSold * energyMultipliers.antimatter
   const pointsFromGw = gwSold * energyMultipliers.gw
   return {
     gain: minZero(pointsFromFusion) +
@@ -231,8 +230,8 @@ module.exports = async (app, selfArchive) => {
     name: 'current',
     actionsLeft: actionsPerTurn,
     points: 0,
-    fusion: 50,
-    antimatter: 10,
+    fusion: 0,
+    antimatter: 0,
     gw: 0,
     tiles: emptyTiles,
     converter1: initialConverterState,
@@ -304,11 +303,6 @@ module.exports = async (app, selfArchive) => {
   ]
   // ###################### </placeholder game state> ##########################
   await setCurrentPlayerState(initialCurrentPlayerState)
-  // TODO: CONTINUE HERE
-  // - place a secondsUntilTurnEnd file in the dat archive (60)
-  // - start a loop that decrements it by 1 every second (runs 5 times a second)
-  // - if it reaches 0, trigger end turn function (which resets time)
-
   const formatToCountdown = seconds => {
     const formatted = moment.duration(seconds * 1000)
     const formattedMinutes = String(formatted.minutes()).padStart(2, '0')
@@ -440,79 +434,6 @@ module.exports = async (app, selfArchive) => {
       )
       if (changePossible) {
         await setCurrentPlayerState(desiredNewState)
-      }
-    },
-    action: async (data) => {
-      const currentPlayerIndex = JSON.stringify(store.get('currentPlayerIndex'))
-      let players = store.get('players')
-      const freePosition = players[currentPlayerIndex].indexOf(0)
-      if (freePosition > -1) {
-        players[currentPlayerIndex][freePosition] = data.actionIndex
-        set('players', players) // optimistic update
-        await selfArchive.writeFile('/state.json', JSON.stringify(
-          players[currentPlayerIndex]
-        ))
-      }
-    },
-    build: async (data) => {
-      const {nextIndex, era} = data
-      const currentPlayerIndex = JSON.stringify(store.get('currentPlayerIndex'))
-      let players = store.get('players')
-      const currentDestructionScore = store.get('destructionScore') || 0
-      const currentWinScore = store.get('winScore') || 0
-      const freePosition = players[currentPlayerIndex].indexOf(0)
-      if (freePosition > -1) {
-
-        players[currentPlayerIndex][freePosition] = findItemIndex(era, nextIndex)
-
-        const adjacentPlayerLeft =
-          currentPlayerIndex - 1 >= 0
-            ? players[currentPlayerIndex - 1]
-            : players.length > 1
-            ? players[players.length - 1]
-            : null
-        const adjacentPlayerRight =
-          currentPlayerIndex + 1 < players.length
-            ? players[currentPlayerIndex + 1]
-            : players.length > 1
-            ? players[0]
-            : null
-        let destroyedCount = 0
-        if (
-          adjacentPlayerLeft &&
-          wonderIndices.includes(adjacentPlayerLeft[freePosition]) &&
-          // flatList[adjacentPlayerLeft[freePosition]].type === 'wonder' &&
-          findItemIndex(era, nextIndex) === weaponIndex
-          // flatList[data].type === 'weapon'
-        ) {
-          destroyedCount += 1
-        }
-        if (
-          adjacentPlayerRight &&
-          wonderIndices.includes(adjacentPlayerRight[freePosition]) &&
-          // flatList[adjacentPlayerRight[freePosition]].type === 'wonder' &&
-          findItemIndex(era, nextIndex) === weaponIndex
-          // flatList[data].type === 'weapon'
-        ) {
-          destroyedCount += 1
-        }
-        if (destroyedCount > players.length - 1) {
-          destroyedCount = players.length - 1
-          // in this case, both adjacent players are identical, this is an ugly
-          // quick hack and we need to properly get adjacent players instead
-        }
-        const wonderCount = players[currentPlayerIndex]
-          .filter(e => wonderIndices.includes(e)).length
-        // if (flatList[data].type === 'wonder' && wonderCount === 3) {
-        if (wonderIndices.includes(findItemIndex(era, nextIndex)) && wonderCount === 3) {
-          set('winScore', currentWinScore + 1)
-        }
-        set('players', players) // optimistic update
-        set('destructionScore', currentDestructionScore + destroyedCount)
-        // ^^ ui only state
-        await selfArchive.writeFile('/state.json', JSON.stringify(
-          players[currentPlayerIndex]
-        ))
       }
     }
   })
