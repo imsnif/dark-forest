@@ -10,6 +10,21 @@ const {
   weaponIndex,
   findItemIndex
 } = require('./components/statics')
+const moment = require('moment')
+
+// TODO: move to statics
+const turnDuration = 20
+const actionsPerTurn = 2
+const energyCaps = {
+  fusion: 12,
+  antimatter: 6,
+  gw: 3
+}
+const energyMultipliers = {
+  fusion: 1,
+  antimatter: 5,
+  gw: 20
+}
 
 function isIdentical (obj1, obj2) {
   try {
@@ -32,11 +47,20 @@ function newTileDifference (oldState, newState) {
   }, {pointChange: 0, actionChange: 0})
 }
 
-function allEnergyFromCovnerters(energyType, state) {
+function allEnergyFromConverters(energyType, state) {
   const converters = allConverters(state)
   return converters.reduce((allEnergy, converter) => {
     const energyGain = converter[energyType]
     return allEnergy + energyGain
+  }, 0)
+}
+
+function cappedEnergyFromConverters (energyType, state) {
+  const converters = allConverters(state)
+  return converters.reduce((allEnergy, converter) => {
+    const energyGain = converter[energyType]
+    const cap = energyCaps[energyType]
+    return allEnergy + (energyGain > cap ? cap : energyGain)
   }, 0)
 }
 
@@ -56,12 +80,12 @@ function converterDifference (oldState, newState) {
     gw: oldState.gw - newState.gw
   }
   const newEnergyInConverters = {
-    fusion: allEnergyFromCovnerters('fusion', newState)  -
-      allEnergyFromCovnerters('fusion', oldState),
-    antimatter: allEnergyFromCovnerters('antimatter', newState)  -
-      allEnergyFromCovnerters('antimatter', oldState),
-    gw: allEnergyFromCovnerters('gw', newState)  -
-      allEnergyFromCovnerters('gw', oldState)
+    fusion: allEnergyFromConverters('fusion', newState)  -
+      allEnergyFromConverters('fusion', oldState),
+    antimatter: allEnergyFromConverters('antimatter', newState)  -
+      allEnergyFromConverters('antimatter', oldState),
+    gw: allEnergyFromConverters('gw', newState)  -
+      allEnergyFromConverters('gw', oldState)
   }
   return { energySold, newEnergyInConverters }
 }
@@ -135,18 +159,13 @@ function predictEnergyGain (state) {
 
 function predictPointGain (state) {
   const converters = extractConverters(state)
-  const fusionSold = allEnergyFromCovnerters('fusion', state)
-  const antimatterSold = allEnergyFromCovnerters('antimatter', state)
-  const gwSold = allEnergyFromCovnerters('gw', state)
-  const pointsFromFusion = fusionSold <= 12
-    ? fusionSold * 1
-    : 12 * 1
-  const pointsFromAntimatter = antimatterSold <= 6
-    ? antimatterSold * 5
-    : 6 * 5
-  const pointsFromGw = gwSold <= 3
-    ? gwSold * 20
-    : 3 * 20
+  const fusionSold = cappedEnergyFromConverters('fusion', state)
+  console.log('fusionSold', fusionSold)
+  const antimatterSold = cappedEnergyFromConverters('antimatter', state)
+  const gwSold = cappedEnergyFromConverters('gw', state)
+  const pointsFromFusion = fusionSold * energyMultipliers.fusion
+  const pointsFromAntimatter = antimatterSold * energyMultipliers.antimatterSold
+  const pointsFromGw = gwSold * energyMultipliers.gw
   return {
     gain: minZero(pointsFromFusion) +
       minZero(pointsFromAntimatter) +
@@ -210,11 +229,11 @@ module.exports = async (app, selfArchive) => {
   }
   const initialCurrentPlayerState = {
     name: 'current',
-    actionsLeft: 2,
-    points: 410,
-    fusion: 2,
-    antimatter: 7,
-    gw: 1,
+    actionsLeft: actionsPerTurn,
+    points: 0,
+    fusion: 50,
+    antimatter: 10,
+    gw: 0,
     tiles: emptyTiles,
     converter1: initialConverterState,
     converter2: initialConverterState,
@@ -224,7 +243,7 @@ module.exports = async (app, selfArchive) => {
   const opponents = [ // TODO: this is just a placeholder
     {
       name: 'one',
-      actionsLeft: 2,
+      actionsLeft: actionsPerTurn,
       points: 123,
       fusion: 1,
       antimatter: 50,
@@ -239,7 +258,7 @@ module.exports = async (app, selfArchive) => {
     },
     {
       name: 'two',
-      actionsLeft: 2,
+      actionsLeft: actionsPerTurn,
       points: 123,
       fusion: 1,
       antimatter: 50,
@@ -254,7 +273,7 @@ module.exports = async (app, selfArchive) => {
     },
     {
       name: 'three',
-      actionsLeft: 2,
+      actionsLeft: actionsPerTurn,
       points: 123,
       fusion: 1,
       antimatter: 50,
@@ -269,7 +288,7 @@ module.exports = async (app, selfArchive) => {
     },
     {
       name: 'four',
-      actionsLeft: 2,
+      actionsLeft: actionsPerTurn,
       points: 123,
       fusion: 1,
       antimatter: 50,
@@ -285,6 +304,69 @@ module.exports = async (app, selfArchive) => {
   ]
   // ###################### </placeholder game state> ##########################
   await setCurrentPlayerState(initialCurrentPlayerState)
+  // TODO: CONTINUE HERE
+  // - place a secondsUntilTurnEnd file in the dat archive (60)
+  // - start a loop that decrements it by 1 every second (runs 5 times a second)
+  // - if it reaches 0, trigger end turn function (which resets time)
+
+  const formatToCountdown = seconds => {
+    const formatted = moment.duration(seconds * 1000)
+    const formattedMinutes = String(formatted.minutes()).padStart(2, '0')
+    const formattedSeconds = String(formatted.seconds()).padStart(2, '0')
+    return `${formattedMinutes}:${formattedSeconds}`
+  }
+
+  const endTurn = async function endTurn () {
+    const currentPlayerState = await getCurrentPlayerState()
+    const nextTurnPredictionInfo =
+      calculateNextTurnPrediction(currentPlayerState)
+    const nextState = Object.assign(
+      {},
+      currentPlayerState,
+      Object.keys(nextTurnPredictionInfo).reduce((pointsAndEnergy, metric) => {
+        const { gain, loss } = nextTurnPredictionInfo[metric]
+        const total = Number(gain) - Number(loss)
+        pointsAndEnergy[metric] = Number(currentPlayerState[metric]) + total
+        return pointsAndEnergy
+      }, {}),
+      {
+        converter1: initialConverterState,
+        converter2: initialConverterState,
+        converter3: initialConverterState,
+        actionsLeft: actionsPerTurn
+      }
+    )
+    await setCurrentPlayerState(nextState)
+    startClock()
+  }
+  const clockTick = async function clockTick () {
+    let secondsUntilTurnEnd
+    try {
+      let stored = Number(await selfArchive.readFile('secondsUntilTurnEnd'))
+      if (stored === 0) {
+        return endTurn()
+      }
+      if (!Number.isInteger(stored) || stored > turnDuration || stored < 0) {
+        throw new Error('invalid secondsUntilTurnEnd')
+      } else {
+        secondsUntilTurnEnd = stored
+      }
+    } catch (e) {
+      secondsUntilTurnEnd = turnDuration + 1
+    }
+    const decremented = secondsUntilTurnEnd - 1
+    const formattedTime = formatToCountdown(decremented)
+    await selfArchive.writeFile('/secondsUntilTurnEnd', String(decremented))
+    set('time', formattedTime) // TODO: moment format
+    setTimeout(clockTick, 1000)
+  }
+  const startClock = async function startClock () {
+    const newDuration = String(turnDuration)
+    const formattedTime = formatToCountdown(newDuration)
+    await selfArchive.writeFile('secondsUntilTurnEnd', newDuration)
+    set('time', formattedTime)
+    setTimeout(clockTick, 1000)
+  }
   store.set('opponents', opponents)
   store.set('time', '01:00')
   store.set('nextTurnPredictionInfo.points.gain', 0)
@@ -296,6 +378,7 @@ module.exports = async (app, selfArchive) => {
   store.set('nextTurnPredictionInfo.gw.gain', 0)
   store.set('nextTurnPredictionInfo.gw.loss', 0)
   app.update(store.get())
+  await startClock()
 
   listen(app, {
     selectBuilding: async function selectBuilding (name) {
@@ -305,7 +388,6 @@ module.exports = async (app, selfArchive) => {
       const selectedBuilding = store.get('selectedBuilding')
       if (!selectedBuilding) return
       const buildingInfo = buildingData[selectedBuilding.name] // TODO: add to statics
-
       const playerState = await getCurrentPlayerState()
       const copyWithInsertedTile =
         (tiles, tileToInsert, insertAt) => tiles
