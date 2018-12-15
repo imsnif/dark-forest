@@ -1,5 +1,6 @@
 /* globals experimental */
 
+const assert = require('assert')
 const { listen } = require('./util/dispatch')
 const Store = require('@redom/store')
 const { updateGameState } = require('./commands/update-game-state')
@@ -10,31 +11,110 @@ const {
   findItemIndex
 } = require('./components/statics')
 
-function verifyPlayerStateChange (oldState, newState) {
+function isIdentical (obj1, obj2) {
+  try {
+    assert.deepEqual(obj1, obj2)
+    return true
+  } catch (e) {
+    return false
+  }
+}
+
+function newTileDifference (oldState, newState) {
   const newTiles = newState.tiles.filter((tile, index) => {
     return oldState.tiles[index].name !== tile.name
   })
-  const statDifferences = newTiles.reduce((acc, tile) => {
+  return newTiles.reduce((acc, tile) => {
     const buildingInfo = buildingData[tile.name]
-    acc.points += buildingInfo.points
-    acc.actions += buildingInfo.actions
+    acc.pointChange += buildingInfo.points
+    acc.actionChange += buildingInfo.actions
     return acc
-  }, {points: 0, actions: 0})
+  }, {pointChange: 0, actionChange: 0})
+}
+
+function allEnergyFromCovnerters(energyType, state) {
+  const converters = allConverters(state)
+  return converters.reduce((allEnergy, converter) => {
+    const energyGain = converter[energyType]
+    return allEnergy + energyGain
+  }, 0)
+}
+
+function allConverters (state) {
+  let converters = []
+  for (let i = 1; i <= 3; i++) {
+    const converter = state[`converter${i}`]
+    converters.push(converter)
+  }
+  return converters
+}
+
+function converterDifference (oldState, newState) {
+  const energySold = {
+    fusion: oldState.fusion - newState.fusion,
+    antimatter: oldState.antimatter - newState.antimatter,
+    gw: oldState.gw - newState.gw
+  }
+  const newEnergyInConverters = {
+    fusion: allEnergyFromCovnerters('fusion', newState)  -
+      allEnergyFromCovnerters('fusion', oldState),
+    antimatter: allEnergyFromCovnerters('antimatter', newState)  -
+      allEnergyFromCovnerters('antimatter', oldState),
+    gw: allEnergyFromCovnerters('gw', newState)  -
+      allEnergyFromCovnerters('gw', oldState)
+  }
+  return { energySold, newEnergyInConverters }
+}
+
+function allEnergyIsPositive (state) {
+  const energyTypes = ['fusion', 'antimatter', 'gw']
+  return energyTypes.every(energyType => state[energyType] >= 0)
+}
+
+function verifyPlayerStateChange (oldState, newState) {
+  const { pointChange, actionChange } = newTileDifference(oldState, newState)
+  const {
+    energySold,
+    newEnergyInConverters
+  } = converterDifference(oldState, newState)
+  const allEnergyInConvertersWasSold = isIdentical(
+    energySold,
+    newEnergyInConverters
+  )
+  const energyInConvertersIsNotNegative = allConverters(newState).every(
+    converter => allEnergyIsPositive(converter)
+  )
+  const energyIsNotNegative = allEnergyIsPositive(newState)
+  const enoughActionsWereDetracted =
+    oldState.actionsLeft - actionChange === newState.actionsLeft
+  const enoughPointsWereDetracted =
+    oldState.points - pointChange === newState.points
   const actionsAreNotNegative = newState.actionsLeft >= 0
   const pointsAreNotNegative = newState.points >= 0
-  const enoughActionsWereDetracted =
-    oldState.actionsLeft - statDifferences.actions === newState.actionsLeft
-  const enoughPointsWereDetracted =
-    oldState.points - statDifferences.points === newState.points
   return (
-    actionsAreNotNegative &&
-    pointsAreNotNegative &&
+    energyInConvertersIsNotNegative &&
+    energyIsNotNegative &&
+    allEnergyInConvertersWasSold &&
     enoughActionsWereDetracted &&
-    enoughPointsWereDetracted
+    enoughPointsWereDetracted &&
+    actionsAreNotNegative &&
+    pointsAreNotNegative
   )
 }
 
-function calculateNextTurnPrediction (state) {
+function extractConverters (state) {
+  let converters = []
+  for (let i = 1; i <= 3; i++) {
+    converters.push(state[`converter${i}`])
+  }
+  return converters
+}
+
+function minZero (points) {
+  return points && points > 0 ? points : 0
+}
+
+function predictEnergyGain (state) {
   return state.tiles.reduce((acc, tile) => {
     const buildingInfo = buildingData[tile.name]
     Object.keys(buildingInfo.gain || {}).forEach(resource => {
@@ -47,11 +127,43 @@ function calculateNextTurnPrediction (state) {
     })
     return acc
   }, {
-    points: { gain: 0, loss: 0 },
     fusion: { gain: 0, loss: 0 },
     antimatter: { gain: 0, loss: 0 },
     gw: { gain: 0, loss: 0 }
   })
+}
+
+function predictPointGain (state) {
+  const converters = extractConverters(state)
+  const fusionSold = allEnergyFromCovnerters('fusion', state)
+  const antimatterSold = allEnergyFromCovnerters('antimatter', state)
+  const gwSold = allEnergyFromCovnerters('gw', state)
+  const pointsFromFusion = fusionSold <= 12
+    ? fusionSold * 1
+    : 12 * 1
+  const pointsFromAntimatter = antimatterSold <= 6
+    ? antimatterSold * 5
+    : 6 * 5
+  const pointsFromGw = gwSold <= 3
+    ? gwSold * 20
+    : 3 * 20
+  return {
+    gain: minZero(pointsFromFusion) +
+      minZero(pointsFromAntimatter) +
+      minZero(pointsFromGw),
+    loss: 0
+  }
+}
+
+function calculateNextTurnPrediction (state) {
+  const energyPrediction = predictEnergyGain(state)
+  const pointPrediction = predictPointGain(state)
+  return {
+    fusion: energyPrediction.fusion,
+    antimatter: energyPrediction.antimatter,
+    gw: energyPrediction.gw,
+    points: pointPrediction
+  }
 }
 
 module.exports = async (app, selfArchive) => {
@@ -91,19 +203,22 @@ module.exports = async (app, selfArchive) => {
   }
 
   const emptyTiles = Array(5).fill({name: 'empty'})
-  const initialCurrentPlayerState = {
-    name: 'current',
-    actionsLeft: 2,
-    points: 410,
-    fusion: 0,
-    antimatter: 0,
-    gw: 0,
-    tiles: emptyTiles
-  }
   const initialConverterState = {
     fusion: 0,
     antimatter: 0,
     gw: 0
+  }
+  const initialCurrentPlayerState = {
+    name: 'current',
+    actionsLeft: 2,
+    points: 410,
+    fusion: 2,
+    antimatter: 7,
+    gw: 1,
+    tiles: emptyTiles,
+    converter1: initialConverterState,
+    converter2: initialConverterState,
+    converter3: initialConverterState
   }
   // ###################### <placeholder game state> ##########################
   const opponents = [ // TODO: this is just a placeholder
@@ -171,9 +286,6 @@ module.exports = async (app, selfArchive) => {
   // ###################### </placeholder game state> ##########################
   await setCurrentPlayerState(initialCurrentPlayerState)
   store.set('opponents', opponents)
-  store.set('converter1', initialConverterState)
-  store.set('converter2', initialConverterState)
-  store.set('converter3', initialConverterState)
   store.set('time', '01:00')
   store.set('nextTurnPredictionInfo.points.gain', 0)
   store.set('nextTurnPredictionInfo.points.loss', 0)
@@ -225,12 +337,28 @@ module.exports = async (app, selfArchive) => {
     openConverterModal: function openConverterModal (indexOnBoard) {
       set('converterModalOpen', indexOnBoard)
     },
-    sellEnergy: function sellEnergy ({energyType, converterIndex, amount}) {
-      const currentEnergyForSale = store.get(`converter${converterIndex}`)
-      const newEnergyForSale = Object.assign({}, currentEnergyForSale, {
-        [energyType]: currentEnergyForSale[energyType] + amount
-      })
-      set(`converter${converterIndex}`, newEnergyForSale)
+    sellEnergy: async function sellEnergy ({energyType, converterIndex, amount}) {
+      const playerState = await getCurrentPlayerState()
+      const converterName = `converter${converterIndex}`
+      const currentEnergySold = playerState[converterName][energyType]
+      const currentEnergyAvailable = playerState[energyType]
+      const desiredNewState = Object.assign(
+        {},
+        playerState,
+        {
+          [converterName]: Object.assign({}, playerState[converterName], {
+            [energyType]: currentEnergySold + amount
+          }),
+          [energyType]: currentEnergyAvailable - amount
+        }
+      )
+      const changePossible = verifyPlayerStateChange(
+        playerState,
+        desiredNewState
+      )
+      if (changePossible) {
+        await setCurrentPlayerState(desiredNewState)
+      }
     },
     action: async (data) => {
       const currentPlayerIndex = JSON.stringify(store.get('currentPlayerIndex'))

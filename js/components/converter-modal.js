@@ -45,11 +45,9 @@ module.exports = class ConverterModal {
     const {
       converterModalOpen,
       currentPlayer,
-      opponents,
-      converter1,
-      converter2,
-      converter3
+      opponents
     } = data
+    const { converter1, converter2, converter3 } = currentPlayer
     const converters = { // TODO: do this in store, preferably as array
       1: converter1,
       2: converter2,
