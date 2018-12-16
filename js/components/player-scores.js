@@ -74,12 +74,17 @@ class Score {
     )
   }
   update (playerData) {
-    const { points, fusion, antimatter, gw, name } = playerData
-    this.name.textContent = name
-    this.pointScore.update(points)
-    this.fusionScore.update(fusion)
-    this.antimatterScore.update(antimatter)
-    this.gwScore.update(gw)
+    if (playerData && playerData.name) {
+      const { points, fusion, antimatter, gw, name } = playerData
+      this.name.textContent = name
+      this.pointScore.update(points)
+      this.fusionScore.update(fusion)
+      this.antimatterScore.update(antimatter)
+      this.gwScore.update(gw)
+      this.el.style.visibility = 'visible'
+    } else {
+      this.el.style.visibility = 'hidden'
+    }
   }
 }
 

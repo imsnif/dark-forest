@@ -30,11 +30,19 @@ module.exports = class UniversePane {
     )
   }
   update (data) {
-    const { currentPlayer, opponents, selectedBuilding } = data
-    const allPlayers = opponents // TODO: pad for less than 5 players
-      .slice(0, 2)
-      .concat([currentPlayer])
-      .concat(opponents.slice(2, 4))
+    const {
+      currentPlayer,
+      leftOpponents,
+      rightOpponents,
+      selectedBuilding
+    } = data
+    const allPlayers = [
+      leftOpponents[1] || {},
+      leftOpponents[0] || {},
+      currentPlayer || {},
+      rightOpponents[0] || {},
+      rightOpponents[1] || {}
+    ]
     this.playerScores.update(allPlayers)
     this.gameControls.update(currentPlayer)
     this.gameBoard.update({allPlayers, selectedBuilding})

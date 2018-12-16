@@ -45,7 +45,8 @@ module.exports = class ConverterModal {
     const {
       converterModalOpen,
       currentPlayer,
-      opponents
+      leftOpponents,
+      rightOpponents
     } = data
     const { converter1, converter2, converter3 } = currentPlayer
     const converters = { // TODO: do this in store, preferably as array
@@ -54,10 +55,13 @@ module.exports = class ConverterModal {
       3: converter3
     }
     if (converterModalOpen) {
-      const allPlayers = opponents // TODO: move this computation outside
-        .slice(0, 2)
-        .concat([currentPlayer])
-        .concat(opponents.slice(2, 4))
+      const allPlayers = [
+        leftOpponents[1] || {},
+        leftOpponents[0] || {},
+        currentPlayer || {},
+        rightOpponents[0] || {},
+        rightOpponents[1] || {}
+      ]
       const players = {
         1: allPlayers[converterModalOpen - 1],
         2: allPlayers[converterModalOpen],

@@ -67,7 +67,7 @@ module.exports = class GameBoard {
   }
   update ({allPlayers, selectedBuilding}) {
     this.el.update(allPlayers.map((player, index) => ({
-      tiles: player.tiles,
+      tiles: player.tiles || [],
       isCurrentPlayer: index === 2,
       hasSelectedBuilding: !!selectedBuilding
     })))

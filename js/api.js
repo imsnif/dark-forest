@@ -238,70 +238,6 @@ module.exports = async (app, selfArchive) => {
     converter2: initialConverterState,
     converter3: initialConverterState
   }
-  // ###################### <placeholder game state> ##########################
-  const opponents = [ // TODO: this is just a placeholder
-    {
-      name: 'one',
-      actionsLeft: actionsPerTurn,
-      points: 123,
-      fusion: 1,
-      antimatter: 50,
-      gw: 12,
-      tiles: [
-        { name: 'fusion' },
-        { name: 'wormhole' },
-        { name: 'empty' },
-        { name: 'empty' },
-        { name: 'fusion' }
-      ]
-    },
-    {
-      name: 'two',
-      actionsLeft: actionsPerTurn,
-      points: 123,
-      fusion: 1,
-      antimatter: 50,
-      gw: 12,
-      tiles: [
-        { name: 'gw' },
-        { name: 'antimatter' },
-        { name: 'empty' },
-        { name: 'wormhole' },
-        { name: 'empty' }
-      ]
-    },
-    {
-      name: 'three',
-      actionsLeft: actionsPerTurn,
-      points: 123,
-      fusion: 1,
-      antimatter: 50,
-      gw: 12,
-      tiles: [
-        { name: 'empty' },
-        { name: 'empty' },
-        { name: 'wormhole' },
-        { name: 'wormhole' },
-        { name: 'fusion' }
-      ]
-    },
-    {
-      name: 'four',
-      actionsLeft: actionsPerTurn,
-      points: 123,
-      fusion: 1,
-      antimatter: 50,
-      gw: 12,
-      tiles: [
-        { name: 'gw' },
-        { name: 'empty' },
-        { name: 'gw' },
-        { name: 'empty' },
-        { name: 'fusion' }
-      ]
-    }
-  ]
-  // ###################### </placeholder game state> ##########################
   await setCurrentPlayerState(initialCurrentPlayerState)
   const formatToCountdown = seconds => {
     const formatted = moment.duration(seconds * 1000)
@@ -361,7 +297,8 @@ module.exports = async (app, selfArchive) => {
     set('time', formattedTime)
     setTimeout(clockTick, 1000)
   }
-  store.set('opponents', opponents)
+  store.set('leftOpponents', [])
+  store.set('rightOpponents', [])
   store.set('time', '01:00')
   store.set('nextTurnPredictionInfo.points.gain', 0)
   store.set('nextTurnPredictionInfo.points.loss', 0)
