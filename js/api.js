@@ -138,18 +138,39 @@ function minZero (points) {
   return points && points > 0 ? points : 0
 }
 
-function predictEnergyGain (state) {
-  return state.tiles.reduce((acc, tile) => {
+function predictEnergyGain (state, leftOpponents, rightOpponents) {
+  return state.tiles.reduce((acc, tile, index) => {
     const buildingInfo = buildingData[tile.name]
-    Object.keys(buildingInfo.gain || {}).forEach(resource => {
-      const pointCount = buildingInfo.gain[resource]
-      acc[resource].gain += pointCount
-    })
-    Object.keys(buildingInfo.loss || {}).forEach(resource => {
-      const pointCount = buildingInfo.loss[resource]
-      acc[resource].loss += pointCount
-    })
-    return acc
+    const neighboringBuildings = [
+      leftOpponents[0] ? leftOpponents[0].tiles[index] : {},
+      rightOpponents[0] ? rightOpponents[0].tiles[index] : {}
+    ]
+    const neighboringWormholes = neighboringBuildings.filter(
+      b => b && b.name === 'wormhole'
+    )
+    if (tile.name === 'wormhole') {
+      neighboringBuildings.forEach(neighboringTile => {
+        if (!neighboringTile) return
+        const neighboringBuildingInfo = buildingData[neighboringTile.name]
+        if (neighboringBuildingInfo) {
+          Object.keys(neighboringBuildingInfo.gain || {}).forEach(resource => {
+            acc[resource].gain += Math.ceil(neighboringBuildingInfo.gain[resource] / 2)
+          })
+        }
+      })
+      return acc
+    } else {
+      Object.keys(buildingInfo.gain || {}).forEach(resource => {
+        const pointCount = buildingInfo.gain[resource] -
+          (neighboringWormholes.length * (buildingInfo.gain[resource] / 2))
+        acc[resource].gain += pointCount
+      })
+      Object.keys(buildingInfo.loss || {}).forEach(resource => {
+        const pointCount = buildingInfo.loss[resource]
+        acc[resource].loss += pointCount
+      })
+      return acc
+    }
   }, {
     fusion: { gain: 0, loss: 0 },
     antimatter: { gain: 0, loss: 0 },
@@ -157,25 +178,82 @@ function predictEnergyGain (state) {
   })
 }
 
-function predictPointGain (state) {
-  const converters = extractConverters(state)
-  const fusionSold = cappedEnergyFromConverters('fusion', state)
-  const antimatterSold = cappedEnergyFromConverters('antimatter', state)
-  const gwSold = cappedEnergyFromConverters('gw', state)
-  const pointsFromFusion = fusionSold * energyMultipliers.fusion
-  const pointsFromAntimatter = antimatterSold * energyMultipliers.antimatter
-  const pointsFromGw = gwSold * energyMultipliers.gw
+
+function resolveResourceInConverter (
+  currentPlayerConverter, opponentConverters, energyType
+) {
+  const cap = energyCaps[energyType]
+  const multiplier = energyMultipliers[energyType]
+  const currentPlayerBid = currentPlayerConverter[energyType]
+  const totalBids = currentPlayerBid + opponentConverters.reduce((total, c) => {
+    return total + (c && c[energyType] ? c[energyType] : 0)
+  }, 0)
+  if (totalBids <= cap) {
+    return currentPlayerBid * multiplier
+  } else {
+    const currentPlayerShare = Math.ceil((currentPlayerBid / totalBids) * cap)
+    return Math.ceil(currentPlayerShare * multiplier)
+  }
+}
+
+function resolveConverter (currentPlayerConverter, opponentConverters) {
+  const pointsFromFusion = resolveResourceInConverter(
+    currentPlayerConverter,
+    opponentConverters,
+    'fusion'
+  )
+  const pointsFromAntimatter = resolveResourceInConverter(
+    currentPlayerConverter,
+    opponentConverters,
+    'antimatter'
+  )
+  const pointsFromGw = resolveResourceInConverter(
+    currentPlayerConverter,
+    opponentConverters,
+    'gw'
+  )
+  return pointsFromFusion + pointsFromAntimatter + pointsFromGw
+}
+
+function predictPointGain (state, leftOpponents, rightOpponents) {
+  const currentPlayerConverters = extractConverters(state)
+  const leftOpponentsConverters = leftOpponents.map(
+    o => extractConverters(o)
+  )
+  const rightOpponentsConverters = rightOpponents.map(
+    o => extractConverters(o)
+  )
+  const leftConverterResults = resolveConverter(currentPlayerConverters[0], [
+    leftOpponents[1] ? leftOpponentsConverters[1][2] : {},
+    leftOpponents[0] ? leftOpponentsConverters[0][1] : {}
+  ])
+  const currentPlayerConverterResults = resolveConverter(currentPlayerConverters[1], [
+    leftOpponents[0] ? leftOpponentsConverters[0][2] : {},
+    rightOpponents[0] ? rightOpponentsConverters[0][0] : {}
+  ])
+  const rightConverterResults = resolveConverter(currentPlayerConverters[2], [
+    rightOpponents[0] ? rightOpponentsConverters[0][1] : {},
+    rightOpponents[1] ? rightOpponentsConverters[1][0] : {}
+  ])
   return {
-    gain: minZero(pointsFromFusion) +
-      minZero(pointsFromAntimatter) +
-      minZero(pointsFromGw),
+    gain: leftConverterResults +
+      currentPlayerConverterResults +
+      rightConverterResults,
     loss: 0
   }
 }
 
-function calculateNextTurnPrediction (state) {
-  const energyPrediction = predictEnergyGain(state)
-  const pointPrediction = predictPointGain(state)
+function calculateNextTurnPrediction (state, leftOpponents, rightOpponents) {
+  const energyPrediction = predictEnergyGain(
+    state,
+    leftOpponents || [],
+    rightOpponents || []
+  )
+  const pointPrediction = predictPointGain(
+    state,
+    leftOpponents || [],
+    rightOpponents || []
+  )
   return {
     fusion: energyPrediction.fusion,
     antimatter: energyPrediction.antimatter,
@@ -208,6 +286,8 @@ module.exports = async (app, selfArchive) => {
   }
   const setCurrentPlayerState = async newState => {
     try {
+      // TODO: also pass leftOpponents and rightOpponents to
+      // calculateNextTurnPrediction
       const nextTurnPredictionInfo = calculateNextTurnPrediction(newState)
       await selfArchive.writeFile('/state.json', JSON.stringify(
         newState
@@ -246,10 +326,51 @@ module.exports = async (app, selfArchive) => {
     return `${formattedMinutes}:${formattedSeconds}`
   }
 
+  const writeEndTurnState = function writeEndTurnState (state) {
+    return selfArchive.writeFile('/endTurnState', JSON.stringify(
+      Object.assign({}, state, {updatedTime: Date.now()})
+    ))
+  }
+  const getEndTurnState = async function getEndTurnState (id) {
+    if (!id) return {}
+    try {
+      const peerArchive = await DatArchive.load(id)
+      const endTurnState = JSON.parse(
+        await peerArchive.readFile('/endTurnState')
+      )
+      const peerTimestamp = await peerArchive.readFile('/timestamp')
+      if (Number(endTurnState.updatedTime) < (Number(peerTimestamp) - 5000)) {
+        // this number is arbitrary
+        throw new Error('peer has not updated their end turn state yet')
+      }
+      return endTurnState
+    } catch (e) {
+      console.warn(e)
+      await new Promise(resolve => setTimeout(resolve, 500)) // arbitrary num
+      // TODO: timeout and kick (blacklist?) peer
+      return getEndTurnState(id)
+    }
+  }
+
   const endTurn = async function endTurn () {
     const currentPlayerState = await getCurrentPlayerState()
-    const nextTurnPredictionInfo =
-      calculateNextTurnPrediction(currentPlayerState)
+    await writeEndTurnState(currentPlayerState)
+    const leftOpponentIds = store.get('leftOpponentIds') || []
+    const rightOpponentIds = store.get('rightOpponentIds') || []
+    const [
+      selfEndTurnState,
+      leftOpponentsEndTurnStates,
+      rightOpponentsEndTurnStates
+    ] = await Promise.all([
+      getEndTurnState(selfArchive.url),
+      Promise.all(leftOpponentIds.map(id => getEndTurnState(id))),
+      Promise.all(rightOpponentIds.map(id => getEndTurnState(id)))
+    ])
+    const nextTurnPredictionInfo = calculateNextTurnPrediction(
+      selfEndTurnState,
+      leftOpponentsEndTurnStates,
+      rightOpponentsEndTurnStates
+    )
     const nextState = Object.assign(
       {},
       currentPlayerState,
@@ -374,10 +495,11 @@ module.exports = async (app, selfArchive) => {
       }
     }
   })
+  // findPeers(selfArchive)
 
-//  await experimental.datPeers.setSessionData(selfArchive.url)
-//
-//  await selfArchive.writeFile('/state.json', JSON.stringify(initialState))
-//  await selfArchive.writeFile('/timestamp', JSON.stringify(Date.now()))
-//  updateGameState(selfArchive, set) // TODO: promise, error, etc.
+  await experimental.datPeers.setSessionData(selfArchive.url)
+
+  // await selfArchive.writeFile('/state.json', JSON.stringify(initialState))
+  await selfArchive.writeFile('/timestamp', JSON.stringify(Date.now()))
+  updateGameState(selfArchive, set) // TODO: promise, error, etc.
 }

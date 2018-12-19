@@ -56,14 +56,16 @@ async function extractStateFromArchives (archives) {
     archives.map(
       async archive => {
         try {
-          const [state, timestamp] = await Promise.all([
+          const [state, timestamp, secondsUntilTurnEnd] = await Promise.all([
             archive.readFile('/state.json'),
-            archive.readFile('/timestamp')
+            archive.readFile('/timestamp'),
+            archive.readFile('/secondsUntilTurnEnd')
           ])
           const url = archive.url
           return {
             state: JSON.parse(state),
             timestamp,
+            secondsUntilTurnEnd,
             url
           }
         } catch (e) {
@@ -95,14 +97,25 @@ async function updateGameState (selfArchive, setUiState) {
   const allArchives = peerArchives.concat(selfArchive)
   const playerStates = await extractStateFromArchives(allArchives)
   const activePlayers = findActivePlayers(playerStates)
-  const gameState = calculateGameState(activePlayers, selfArchive.url)
-  const currentPlayerState = gameState.players[gameState.currentPlayerIndex]
-  setUiState('players', gameState.players)
-  setUiState('currentPlayerIndex', gameState.currentPlayerIndex)
-  setUiState('winners', gameState.winners)
-  await selfArchive.writeFile(
-    '/state.json', JSON.stringify(currentPlayerState)
+  const sortedActivePlayers = activePlayers.sort(
+    (a, b) => a.url > b.url ? -1 : 1
   )
+  const currentPlayerIndex = sortedActivePlayers.findIndex(
+    p => p.url === selfArchive.url
+  )
+  const currentPlayer = sortedActivePlayers[currentPlayerIndex]
+  const leftPlayers = sortedActivePlayers.slice(0, currentPlayerIndex)
+  const rightPlayers = sortedActivePlayers.slice(currentPlayerIndex + 1)
+  const highestPlayerTime = sortedActivePlayers[0].secondsUntilTurnEnd
+  // TODO: adjust time to clock of player on my left (or loop back)
+  if (Number(currentPlayer.secondsUntilTurnEnd) !== Number(highestPlayerTime)) {
+    // adjust clock
+    await selfArchive.writeFile('/secondsUntilTurnEnd', highestPlayerTime)
+  }
+  setUiState('leftOpponents', leftPlayers.map(o => o.state))
+  setUiState('rightOpponents', rightPlayers.map(o => o.state))
+  setUiState('leftOpponentIds', leftPlayers.map(o => o.url))
+  setUiState('rightOpponentIds', rightPlayers.map(o => o.url))
   await selfArchive.writeFile('/timestamp', JSON.stringify(Date.now()))
   setTimeout(() => updateGameState(selfArchive, setUiState), 500)
 }
