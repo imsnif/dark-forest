@@ -306,8 +306,10 @@ module.exports = async (app, selfArchive) => {
     antimatter: 0,
     gw: 0
   }
+  const currentPlayerName = (await selfArchive.getInfo()).title.slice(0, 5)
   const initialCurrentPlayerState = {
-    name: 'current',
+    // name: 'current',
+    name: currentPlayerName,
     actionsLeft: actionsPerTurn,
     points: 0,
     fusion: 0,
