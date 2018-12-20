@@ -81,7 +81,9 @@ async function extractStateFromArchives (archives) {
 function findActivePlayers (playerStates) {
   return playerStates.filter(({timestamp}) => {
     // this number is arbitrary
-    return ((Number(timestamp) + 1500) > Date.now())
+    // TODO: decide if we need this filtering or if we can live without it
+    return true
+    // return ((Number(timestamp) + 1500) > Date.now())
   })
 }
 
